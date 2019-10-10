@@ -1,0 +1,16 @@
+# Editor
+.idea/
+
+# Build
+.build/
+obj/
+*.gch
+*.o
+
+# Binaries
+*.a.out
+*.so
+*.a
+
+# MacOS
+.DS_Store
