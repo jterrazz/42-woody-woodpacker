@@ -4,25 +4,19 @@ Runtime packer for ELF binaries.
 
 ## Ressources
 
-- [Understand ELF](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html)
+- [ELF Header](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html)
+- [Add an ELF section in C]([https://stackoverflow.com/questions/1088128/adding-section-to-elf-file](https://stackoverflow.com/questions/1088128/adding-section-to-elf-file)
 
 ### Useful commands
 
-Add a section to an ELF file
-```
-$ echo 'int main() { puts ("Hello world"); }' | gcc -x c - -c -o hello.o
+#### Add an ELF section to an executable
 
-$ echo "this is my special data" >mydata
+*Doesn't modify the header*
 
-$ objcopy --add-section .mydata=mydata \
-          --set-section-flags .mydata=noload,readonly hello.o hello2.o
-
-$ gcc hello2.o -o hello
-
-$ ./hello
-Hello world
-
-$ objdump -sj .mydata hello
+```bash
+$ echo "data to insert" > mydata
+$ objcopy --add-section .mydata=mydata --set-section-flags .mydata=noload,readonly elf_exec new_exec
+$ objdump -sj .mydata new_exec
 ```
 
 ```bash
@@ -37,14 +31,15 @@ strings
 hexdump # -C
 ```
 
-https://stackoverflow.com/questions/1647359/is-there-a-way-to-get-gcc-to-output-raw-binary
-
-#### Get the bin file
+#### Output raw binary from .c with gcc
 
 ```bash
-cc -c test.c
-objcopy -O binary test.o binfile
-hexdump -C binfile 
+$ cc -c test.c
+$ objcopy -O binary test.o binfile
+
+$ objdump -d test.o
+# Will print binary with section
+
+$ hexdump -C binfile 
+# Will print the binary only
 ```
-
-
