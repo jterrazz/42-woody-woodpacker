@@ -9,6 +9,8 @@ Runtime packer for ELF binaries.
 ### Useful commands
 
 ```bash
+lldb
+radare2
 readelf
 strace
 ltrace
