@@ -19,18 +19,6 @@ $ objcopy --add-section .mydata=mydata --set-section-flags .mydata=noload,readon
 $ objdump -sj .mydata new_exec
 ```
 
-```bash
-lldb
-radare2
-readelf
-strace
-ltrace
-objdump # -d test.o
-objcopy # -O binary test.o binfile
-strings
-hexdump # -C
-```
-
 #### Output raw binary from .c with gcc
 
 ```bash
@@ -43,3 +31,19 @@ $ objdump -d test.o
 $ hexdump -C binfile 
 # Will print the binary only
 ```
+
+Other commands
+
+```bash
+lldb
+radare2
+readelf
+strace
+ltrace
+objdump # -d test.o
+objcopy # -O binary test.o binfile
+strings
+hexdump # -C
+```
+
+
