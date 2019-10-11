@@ -5,7 +5,7 @@ Runtime packer for ELF binaries.
 ## Ressources
 
 - [ELF Header](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html)
-- [Add an ELF section in C]([https://stackoverflow.com/questions/1088128/adding-section-to-elf-file](https://stackoverflow.com/questions/1088128/adding-section-to-elf-file)
+- [Add an ELF section in C (see last post)](https://stackoverflow.com/questions/1088128/adding-section-to-elf-file)
 
 ### Useful commands
 
@@ -32,7 +32,7 @@ $ hexdump -C binfile
 # Will print the binary only
 ```
 
-Other commands
+#### Other commands
 
 ```bash
 lldb
