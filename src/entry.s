@@ -39,8 +39,8 @@ variables:
 
 end:
     pop rdx
-    pop rdi
     pop rsi
-    pop rdx
+    pop rdi
+    pop rax
     popf
     ret
