@@ -9,6 +9,11 @@ Runtime packer for ELF binaries.
 
 ### Useful commands
 
+#### Radare2
+
+- [The base 1](https://medium.com/@jacob16682/reverse-engineering-using-radare2-588775ea38d5)
+- [The base 2](https://medium.com/@jacob16682/reverse-engineering-with-radare2-part-2-83b71df7ffe4)
+
 #### Add an ELF section to an executable
 
 *Doesn't modify the header*
