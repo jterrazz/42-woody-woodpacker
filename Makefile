@@ -8,7 +8,7 @@ else
 CFLAGS = -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
 endif
 IFLAGS = -I./include
-ASFLAGS = -f elf64
+ASFLAGS = -f macho64
 
 VPATH = src
 OBJDIR	= obj
