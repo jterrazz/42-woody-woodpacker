@@ -3,18 +3,6 @@
 #include <elf.h>
 #include <assert.h>
 
-static u8 *secure_read(u8 *mem,
-		       size_t mem_len,
-		       size_t offset,
-		       size_t len_to_read)
-{
-	if (offset + len_to_read > mem_len) {
-		return NULL;
-	} else {
-		return &mem[offset];
-	}
-}
-
 struct e_ident {
 	char magic[4];
 	u8 class;

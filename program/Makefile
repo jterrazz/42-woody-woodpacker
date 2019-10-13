@@ -49,12 +49,16 @@ $(OBJDIR)/elf_header_32.o: elf_header.c $(HEADERS) $(LIBS) Makefile
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D ElfN_Ehdr=Elf32_Ehdr \
 	-D parse_elf_header_generic=parse_elf_header_32 \
+	-D ElfN_Addr=Elf32_Addr \
+	-D ElfN_Off=Elf32_Off \
 	-D _32BITS
 
 $(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D ElfN_Ehdr=Elf64_Ehdr \
 	-D parse_elf_header_generic=parse_elf_header_64 \
+	-D ElfN_Addr=Elf64_Addr \
+	-D ElfN_Off=Elf64_Off \
 	-D _64BITS
 
 # asm files
