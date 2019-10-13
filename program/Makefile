@@ -14,7 +14,7 @@ LDFLAGS = -L./libft_ng -lft
 OBJDIR = obj
 
 VPATH += src
-SRC_C += main common
+SRC_C += main common elf
 SRC_ASM +=
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a

@@ -8,7 +8,13 @@ typedef unsigned int       u32;
 typedef unsigned long long u64;
 
 /*
- * common.h
+ * elf.c
+ * Elf toolkit
+ */
+int read_elf(u8 *data, size_t len);
+
+/*
+ * common.c
  * Basic tools
  */
 void perror_and_exit(const char *err);
