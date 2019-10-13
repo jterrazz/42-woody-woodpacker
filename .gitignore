@@ -3,7 +3,6 @@
 
 # Build
 .build/
-obj/
 *.gch
 *.o
 
@@ -14,3 +13,12 @@ obj/
 
 # MacOS
 .DS_Store
+
+# hidden files
+.*
+
+# expect self
+!.gitignore
+
+# main executable
+woody_woodpacker
