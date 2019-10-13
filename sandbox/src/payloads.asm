@@ -59,9 +59,11 @@ _jump_base:
 	push rbp
 	mov rbp, rsp
 
+; put opcode of relative jump REL32
 	db 0xe9
 .address: dd 0xdeadbeef
 
+; that code is normally unreachable
 	pop rbp
 	ret
 global _jump_base_size
@@ -69,6 +71,10 @@ _jump_base_size:    dq $-_jump_base
 
 global _writer
 _writer:
+	push rdx
+	push rsi
+	push rdi
+
 	jmp .print_start_msg
 .displayed_str db "AFTER RELATIVE JUMP", 0x0a, 0
 .print_start_msg:
@@ -78,6 +84,12 @@ _writer:
 	mov rdx, 21
 	syscall
 
-	jmp $
+	pop rdi
+	pop rsi
+	pop rdx
+
+	pop rbp
+	ret
+
 global _writer_size
 _writer_size:    dq $-_writer
