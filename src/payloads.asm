@@ -40,3 +40,16 @@ _payload64:
 	ret
 global _payload64_size
 _payload64_size:    dq $-_payload64
+
+global _modification_try
+_modification_try:
+	push rbp
+	mov rbp, rsp
+
+	mov rax, [rel .value]
+	pop rbp
+	; rax is returned as u64
+	ret
+.value dq 0xdeadbeefdeadbeef
+global _modification_try_size
+_modification_try_size:    dq $-_modification_try
