@@ -9,10 +9,14 @@
 extern u8 _payload32;
 extern u8 _payload64;
 extern u8 _modification_try;
+extern u8 _jump_base;
+extern u8 _writer;
 
 extern u64 _payload32_size;
 extern u64 _payload64_size;
 extern u64 _modification_try_size;
+extern u64 _jump_base_size;
+extern u64 _writer_size;
 
 /*
  * find a binary pattern into a binary stream.
@@ -53,6 +57,7 @@ int main(int argc, char *argv[])
 		perror("mmap");
 		return 1;
 	}
+	printf("allocation mmap at %p\n", data);
 	memcpy(data, &_payload64, (size_t)_payload64_size);
 	((void(*)(void))data)();
 
@@ -68,6 +73,34 @@ int main(int argc, char *argv[])
 		*ptr = 0x42;
 		v = ((u64(*)(void))data)();
 		printf("Received value after code modification: %llx\n", v);
+	} else {
+		dprintf(STDERR_FILENO, "Pattern not found\n");
+		return 1;
+	}
+
+	memcpy(data, &_jump_base, (size_t)_jump_base_size);
+	u32 s = 0xdeadbeef;
+	u32 *p = (u32 *)smemchr(data, &s, _jump_base_size, sizeof(s));
+	if (p != NULL) {
+		// Advance to the next instruction EIP
+		u64 rel_start = (u64)p + 4;
+
+		// Allocate a new chunk of code for the writer fm
+		char *data2 = mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
+		if (data2 == MAP_FAILED) {
+			perror("mmap");
+			return 1;
+		}
+		printf("allocation mmap at %p\n", data);
+		memcpy(data2, &_writer, (size_t)_writer_size);
+
+		u64 rel_end = (u64)data2;
+
+		// For the test, we assert implicitely that the rel jump offset id positive
+		// rel_end > rel_start
+		*p = (u32)(rel_end - rel_start);
+		printf("rel_start: %p, rel_end: %p\n", (void *)rel_start, (void *)rel_end);
+		((void(*)(void))data)();
 	} else {
 		dprintf(STDERR_FILENO, "Pattern not found\n");
 		return 1;

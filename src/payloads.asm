@@ -53,3 +53,31 @@ _modification_try:
 .value dq 0xdeadbeefdeadbeef
 global _modification_try_size
 _modification_try_size:    dq $-_modification_try
+
+global _jump_base
+_jump_base:
+	push rbp
+	mov rbp, rsp
+
+	db 0xe9
+.address: dd 0xdeadbeef
+
+	pop rbp
+	ret
+global _jump_base_size
+_jump_base_size:    dq $-_jump_base
+
+global _writer
+_writer:
+	jmp .print_start_msg
+.displayed_str db "AFTER RELATIVE JUMP", 0x0a, 0
+.print_start_msg:
+	mov rax, 0x1
+	mov rdi, 1
+	lea rsi, [rel .displayed_str]
+	mov rdx, 21
+	syscall
+
+	jmp $
+global _writer_size
+_writer_size:    dq $-_writer
