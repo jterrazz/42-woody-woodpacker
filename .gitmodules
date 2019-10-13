@@ -1,0 +1,3 @@
+[submodule "program/libft_ng"]
+	path = program/libft_ng
+	url = https://gitlab.com/mordaklavache/libft_ng.git
