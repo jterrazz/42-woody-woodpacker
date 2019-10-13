@@ -11,10 +11,17 @@ IFLAGS = -I./include -I./libft_ng/includes
 ASFLAGS = -f elf64
 LDFLAGS = -L./libft_ng -lft
 
+ifeq ($(SILENT),yes)
+CFLAGS += -D SILENT
+endif
+
 OBJDIR = obj
 
 VPATH += src
+# common C files
 SRC_C += main common elf
+# generic C files
+SRC_C += elf_header_32 elf_header_64
 SRC_ASM +=
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a
@@ -26,14 +33,36 @@ OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)
 
 all: libft $(NAME)
 
+# link
+
 $(NAME): $(OBJ_C) $(OBJ_ASM)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+# C files
 
 $(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) Makefile
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
+# generic C files section:
+
+$(OBJDIR)/elf_header_32.o: elf_header.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D ElfN_Ehdr=Elf32_Ehdr \
+	-D parse_elf_header_generic=parse_elf_header_32 \
+	-D _32BITS
+
+$(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D ElfN_Ehdr=Elf64_Ehdr \
+	-D parse_elf_header_generic=parse_elf_header_64 \
+	-D _64BITS
+
+# asm files
+
 $(OBJDIR)/%.o: %.asm $(LIBS) Makefile
 	$(AS) $(ASFLAGS) -o $@ $<
+
+# other targets
 
 clean:
 	make -C libft_ng clean

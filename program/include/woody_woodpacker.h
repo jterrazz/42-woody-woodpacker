@@ -19,4 +19,9 @@ int read_elf(u8 *data, size_t len);
  */
 void perror_and_exit(const char *err);
 
+#ifdef SILENT
+#define ft_printf(...) {}
+// #define ft_dprintf(...) {}
+#endif
+
 #endif
