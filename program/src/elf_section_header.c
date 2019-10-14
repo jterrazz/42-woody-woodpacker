@@ -64,6 +64,9 @@ int dump_section_header_generic(u8 *data, size_t len)
 		}
 		ElfN_Shdr *s = &section_header_array[i];
 		if (j != SECTION_HEADER_TYPE_N) {
+#ifdef SILENT
+			(void)s;
+#endif
 			ft_printf("%2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
 				  s->sh_flags & SHF_WRITE ? 'W' : ' ',
 				  s->sh_flags & SHF_ALLOC ? 'A' : ' ',

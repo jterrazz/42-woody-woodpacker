@@ -8,6 +8,13 @@ typedef unsigned short     u16;
 typedef unsigned int       u32;
 typedef unsigned long long u64;
 
+typedef struct stream STREAM;
+
+STREAM *sopen(const char *filename, size_t file_len);
+int sclose(STREAM *ctx);
+void *sread(STREAM *ctx, size_t offset, size_t len);
+int swrite(STREAM *ctx, void *content, size_t offset, size_t len);
+
 /*
  * elf.c
  * Elf toolkit
@@ -28,6 +35,13 @@ u8 *secure_read(u8 *mem,
 #ifdef SILENT
 #define ft_printf(...) {}
 #define ft_dprintf(...) {}
+#endif
+
+/*
+ * Avoid linking of forbidden functions in 42
+ */
+#ifdef _42_
+#define unlink(...) {}
 #endif
 
 #endif
