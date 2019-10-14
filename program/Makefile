@@ -15,11 +15,15 @@ ifeq ($(SILENT),yes)
 CFLAGS += -D SILENT
 endif
 
+ifeq ($(_42_),yes)
+CFLAGS += -D _42_
+endif
+
 OBJDIR = obj
 
 VPATH += src
 # common C files
-SRC_C += main common elf
+SRC_C += main common elf file
 # generic C files
 SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64
 SRC_ASM +=

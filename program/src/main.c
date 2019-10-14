@@ -46,5 +46,11 @@ int main(int argc, char *argv[])
 	if (ret < 0) {
 		perror_and_exit("close");
 	}
+
+	STREAM *file = sopen("banane", 128);
+	for (int i = 0; i < 128; i++) {
+		swrite(file, (u8 *)"g", i, 1);
+	}
+	sclose(file);
 	return 0;
 }
