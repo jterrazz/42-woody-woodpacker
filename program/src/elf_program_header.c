@@ -3,20 +3,20 @@
 #include <elf.h>
 
 // TODO Transoform to generic
-int dump_program_header_64(void *bin_start, size_t bin_len)
+int dump_program_header_generic(void *bin_start, size_t bin_len)
 {
-    Elf64_Ehdr *header = (Elf64_Ehdr *)secure_read(bin_start, bin_len, 0, sizeof(Elf64_Ehdr));
+    ElfN_Ehdr *header = (ElfN_Ehdr *)secure_read(bin_start, bin_len, 0, sizeof(ElfN_Ehdr));
     if (header == NULL) {
         return -1;
     }
-    Elf64_Off offset = header->e_phoff;
+    ElfN_Off offset = header->e_phoff;
     ft_printf("Offset: %p, %d entries of %d bytes\n", offset, header->e_phnum, header->e_phentsize);
 
-    Elf64_Phdr *phdr = secure_read(bin_start, bin_len, offset, header->e_phnum * header->e_phentsize);
+    ElfN_Phdr *phdr = secure_read(bin_start, bin_len, offset, header->e_phnum * header->e_phentsize);
     ft_printf("Program Headers:\n");
     ft_printf("Type    Offset       VirtualAddress     PhysAddr\n");
 
-    Elf64_Phdr *last_load_phdr = NULL;
+    ElfN_Phdr *last_load_phdr = NULL;
     for (u16 i = 0; i < header->e_phnum ; i++) {
         switch (phdr->p_type) {
             case PT_NULL:

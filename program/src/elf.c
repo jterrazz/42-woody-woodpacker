@@ -143,7 +143,9 @@ int read_elf(u8 *data, size_t len)
 	if (ident_field->class == ELFCLASS32) {
 		Elf32_Ehdr *header = parse_elf_header_32(data, len);
 		dump_section_header_32(data, len);
-		(void)header;
+        dump_program_header_32(data, len);
+
+        (void)header;
 	} else if (ident_field->class == ELFCLASS64) {
 		Elf64_Ehdr *header = parse_elf_header_64(data, len);
 		dump_section_header_64(data, len);
