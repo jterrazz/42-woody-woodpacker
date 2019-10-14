@@ -1,0 +1,5 @@
+#!/bin/sh
+nasm -f elf32 writer.s -o writer.o
+gcc -c -m32 main.c -o main.o
+gcc -m32 main.o writer.o -o test
+exit 0
