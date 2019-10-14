@@ -26,7 +26,7 @@ VPATH += src
 SRC_C += main common elf file
 # generic C files
 SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64
-SRC_ASM +=
+SRC_ASM += payloads
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a
 
@@ -40,7 +40,7 @@ all: libft $(NAME)
 # link
 
 $(NAME): $(OBJ_C) $(OBJ_ASM)
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+	$(CC) -Wl,--gc-sections $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 # C files
 
