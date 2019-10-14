@@ -132,15 +132,20 @@ struct e_ident *parse_ident_field(u8 *data, size_t len)
 Elf32_Ehdr *parse_elf_header_32(u8 *data, size_t len);
 Elf64_Ehdr *parse_elf_header_64(u8 *data, size_t len);
 
+int dump_section_header_32(u8 *data, size_t len);
+int dump_section_header_64(u8 *data, size_t len);
+
 int read_elf(u8 *data, size_t len)
 {
 	struct e_ident *ident_field = parse_ident_field(data, len);
 
 	if (ident_field->class == ELFCLASS32) {
 		Elf32_Ehdr *header = parse_elf_header_32(data, len);
+		dump_section_header_32(data, len);
 		(void)header;
 	} else if (ident_field->class == ELFCLASS64) {
 		Elf64_Ehdr *header = parse_elf_header_64(data, len);
+		dump_section_header_64(data, len);
 		(void)header;
 	} else {
 		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");

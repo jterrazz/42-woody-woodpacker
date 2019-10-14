@@ -21,7 +21,7 @@ VPATH += src
 # common C files
 SRC_C += main common elf
 # generic C files
-SRC_C += elf_header_32 elf_header_64
+SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64
 SRC_ASM +=
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a
@@ -57,6 +57,22 @@ $(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D ElfN_Ehdr=Elf64_Ehdr \
 	-D parse_elf_header_generic=parse_elf_header_64 \
+	-D ElfN_Addr=Elf64_Addr \
+	-D ElfN_Off=Elf64_Off \
+	-D _64BITS
+
+$(OBJDIR)/elf_section_header_32.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D ElfN_Ehdr=Elf32_Ehdr \
+	-D dump_section_header_generic=dump_section_header_32 \
+	-D ElfN_Addr=Elf32_Addr \
+	-D ElfN_Off=Elf32_Off \
+	-D _32BITS
+
+$(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D ElfN_Ehdr=Elf64_Ehdr \
+	-D dump_section_header_generic=dump_section_header_64 \
 	-D ElfN_Addr=Elf64_Addr \
 	-D ElfN_Off=Elf64_Off \
 	-D _64BITS
