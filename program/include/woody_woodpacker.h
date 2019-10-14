@@ -26,7 +26,7 @@ u8 *secure_read(u8 *mem,
 
 #ifdef SILENT
 #define ft_printf(...) {}
-// #define ft_dprintf(...) {}
+#define ft_dprintf(...) {}
 #endif
 
 #endif

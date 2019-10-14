@@ -5,7 +5,11 @@
 
 void perror_and_exit(const char *err)
 {
+#ifndef SILENT
 	perror(err);
+#else
+	(void)err;
+#endif
 	exit(-1);
 }
 
