@@ -84,11 +84,13 @@ int sclose(STREAM *ctx)
 	}
 	ret = munmap(ctx->data, ctx->len);
 	if (ret < 0) {
-		perror_and_exit("munmap");
+		perror("munmap");
+		return -1;
 	}
 	ret = close(ctx->fd);
 	if (ret < 0) {
-		perror_and_exit("close");
+		perror("close");
+		return -1;
 	}
 	free(ctx);
 	return 0;

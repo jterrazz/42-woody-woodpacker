@@ -35,9 +35,10 @@ int main(int argc, char *argv[])
 	}
 	read_elf(data, file_len);
 
-	// for (size_t i = 0; i < file_len; i++) {
-	// 	write(1, &data[i], 1);
-	// }
+	STREAM *file = sopen("banane", file_len);
+	swrite(file, data, 0, file_len);
+	sclose(file);
+
 	ret = munmap(data, file_len);
 	if (ret < 0) {
 		perror_and_exit("munmap");
@@ -46,11 +47,5 @@ int main(int argc, char *argv[])
 	if (ret < 0) {
 		perror_and_exit("close");
 	}
-
-	STREAM *file = sopen("banane", 128);
-	for (int i = 0; i < 128; i++) {
-		swrite(file, (u8 *)"g", i, 1);
-	}
-	sclose(file);
 	return 0;
 }
