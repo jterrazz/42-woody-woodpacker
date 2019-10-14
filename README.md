@@ -14,6 +14,16 @@ Runtime packer for ELF binaries.
 - [The base 1](https://medium.com/@jacob16682/reverse-engineering-using-radare2-588775ea38d5)
 - [The base 2](https://medium.com/@jacob16682/reverse-engineering-with-radare2-part-2-83b71df7ffe4)
 
+#### Compile a binary with nasm and dump his assembly code
+
+```bash
+$ nasm -f bin my_assembly_file.s -o my_binary
+# Will compile the .s file into a raw binary
+
+$ objdump -b binary -m i386:x86-64 -M intel -D my_binary
+# Will dump the assembly code of the binary file for arch i386:x86-64 in intel syntax
+```
+
 #### Add an ELF section to an executable
 
 *Doesn't modify the header*
