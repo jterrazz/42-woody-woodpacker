@@ -5,6 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <stdlib.h>
 
 extern u8 _payload32;
 extern u8 _payload64;
@@ -119,6 +120,7 @@ int test_modification(void)
         dprintf(STDERR_FILENO, "Pattern not found\n");
         return 1;
     }
+    return 0;
 }
 
 void encrypt_addr(char *start, size_t len)
@@ -142,7 +144,7 @@ void test_encryption()
     printf("Encrypt data: %s\n", addr_to_encrypt);
     ((void(*)(void))payload)();
     printf("Decripted data:: %s\n", addr_to_encrypt);
-
+    free(addr_to_encrypt);
 }
 
 void test_original_payload_infos(void)
@@ -151,10 +153,10 @@ void test_original_payload_infos(void)
     printf("size of payload64: %llu\n", _payload64_size);
 }
 
-int main(int argc, char *argv[])
+int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
 {
-//    test_original_payload_infos();
-//    test_encryption();
-    test_modification();
+	test_original_payload_infos();
+	test_encryption();
+	test_modification();
 	return 0;
 }
