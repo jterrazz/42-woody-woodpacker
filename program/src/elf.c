@@ -139,6 +139,8 @@ int dump_program_header_64(u8 *data, size_t len);
 int read_elf(u8 *data, size_t len)
 {
 	struct e_ident *ident_field = parse_ident_field(data, len);
+	if (!ident_field)
+	    return -1;
 
 	if (ident_field->class == ELFCLASS32) {
 		Elf32_Ehdr *header = parse_elf_header_32(data, len);
