@@ -6,12 +6,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-struct stream {
-	int fd;
-	u8 *data;
-	size_t len;
-};
-
 #ifdef SILENT
 #define perror(...) {}
 #endif
