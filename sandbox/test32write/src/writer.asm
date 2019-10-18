@@ -1,5 +1,8 @@
 [BITS 32]
 global _writer
+global _string
+global _string2
+global _test_fn
 _writer:
 	push ebp
 	mov ebp, esp
@@ -8,14 +11,46 @@ _writer:
 
 	mov eax, 4
 	mov ebx, 1
-	mov ecx, .string
+	mov ecx, _string
 	mov edx, 7
 
 	int 80h
 
-	jmp .next
-.string db "banane", 0x0a, 0
-.next:
+	jmp _next
+_string: db "banane", 0x0a, 0
+_next:
+	mov eax, 4
+	mov ebx, 1
+	mov ecx, _string2
+	mov edx, 5
+
+	int 80h
+
+	jmp _next2
+_string2: db "toto", 0x0a, 0
+
+
+_test_fn:
+	push ebp
+	mov ebp, esp
+	mov eax, 4
+	mov ebx, 1
+	mov ecx, _string
+	mov edx, 7
+
+	int 80h
+	pop ebp
+	ret
+
+_next2:
+	mov eax, 4
+	mov ebx, 1
+	mov ecx, _string
+	mov edx, 7
+
+	int 80h
+
+	call _test_fn
 
 	pop ebx
 

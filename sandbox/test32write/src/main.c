@@ -12,6 +12,12 @@ typedef unsigned int u32;
 extern u8 _writer;
 extern u32 _writer_size;
 
+extern u8 _string;
+extern u8 _string2;
+extern u8 _test_fn;
+
+static void *symtab[] = {&_string, &_string2, &_test_fn};
+
 /*
  * find a binary pattern into a binary stream.
  * @return value: pointer to location of the first pattern
@@ -45,7 +51,6 @@ char *get_writer_copy(void)
     printf("absolute address of original fn: %p\n", &_writer);
     printf("allocation mmap at %p\n", data);
     memcpy(data, &_writer, (size_t)_writer_size);
-    bzero(&_writer, (size_t)_writer_size);
     printf("copied the payload at %p\n", data);
     return data;
 }
@@ -54,6 +59,22 @@ int test_modification(void)
 {
     char *data = get_writer_copy();
 
+    for (size_t i = 0; i < sizeof(symtab) / sizeof(void *); i++) {
+	    u32 rel = symtab[i] - (void *)&_writer;
+	    u32 new_abs_addr = (u32)(data + rel);
+	    printf("new absolute addr: %p rel: %u\n", (void *)new_abs_addr, rel);
+
+	    char *dup_data = data;
+	    u32 *s = NULL;
+	    while ((s = (u32 *)smemchr(dup_data, &symtab[i], (size_t)_writer_size, sizeof(u32))) != NULL) {
+		    printf("founded at %p\n", s);
+		    *s = new_abs_addr;
+		    dup_data = s + sizeof(u32);
+	    }
+    }
+
+    printf("Before call...\n");
+    ((void(*)(void))data)();
     ((void(*)(void))data)();
     munmap(data, 4096);
     return 0;
@@ -62,6 +83,9 @@ int test_modification(void)
 void test_original_payload_infos(void)
 {
     printf("size of writer: %u\n", _writer_size);
+    printf("string address: %p\n", &_string);
+    printf("string2 address: %p\n", &_string2);
+    printf("size_of symtab: %zu\n", sizeof(symtab));
 }
 
 int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
