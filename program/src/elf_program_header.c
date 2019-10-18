@@ -65,32 +65,38 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     ft_printf("Last LOAD header is at offset: %llx with size %llx\n", last_load_phdr->p_offset, last_load_phdr->p_memsz);
 
-    // TODO Check for returns
-    STREAM *new_exec = sopen("./tmpwoody", bin_len + _payload64_size);
+
+    u64 before_end_load_size = bin_len - last_load_phdr->p_offset + last_load_phdr->p_memsz;
+    u64 after_load_size = bin_len - last_load_phdr->p_offset - last_load_phdr->p_memsz;
+    u64 bss_size = last_load_phdr->p_memsz - last_load_phdr->p_filesz;
+    u64 new_startpoint = bss_size + before_end_load_size;
+
+    STREAM *new_exec = sopen("./tmpwoody", bin_len + _payload64_size + bss_size);
     if (!new_exec) {
         return -1;
     }
-    u64 end_file_size = bin_len - last_load_phdr->p_offset - last_load_phdr->p_memsz;
+
 // secure
-    int i = swrite(new_exec, bin_start , 0, last_load_phdr->p_offset + last_load_phdr->p_memsz);
-    int j = swrite(new_exec, bin_start + last_load_phdr->p_offset + last_load_phdr->p_memsz, last_load_phdr->p_offset + last_load_phdr->p_memsz + _payload64_size, end_file_size);
-    ft_printf("Will move data from %llx %llx = %llx\n", last_load_phdr->p_offset, last_load_phdr->p_memsz, last_load_phdr->p_offset + last_load_phdr->p_memsz);
-    int k = swrite(new_exec, &_payload64, last_load_phdr->p_offset + last_load_phdr->p_memsz, _payload64_size);
+    int i = swrite(new_exec, bin_start , 0, before_end_load_size);
+    int j = swrite(new_exec, bin_start + before_end_load_size, before_end_load_size + _payload64_size + bss_size, after_load_size);
+
+    void *bss_section = sread(new_exec, before_end_load_size, _payload64_size);
+    if (!bss_section) {
+        return -1;
+    }
+    ft_bzero(bss_section, _payload64_size);
+    ft_printf("Will move the data after last load from %llx %llx = %llx\n", last_load_phdr->p_offset, last_load_phdr->p_memsz, last_load_phdr->p_offset + last_load_phdr->p_memsz);
+    int k = swrite(new_exec, &_payload64, new_startpoint, _payload64_size);
 
     ft_printf("returns: %d %d %d\n", i, j, k);
 
-    //ElfN_Ehdr *header_new = (ElfN_Ehdr *)secure_read(new_exec->data, bin_len + _payload64_size, 0, sizeof(ElfN_Ehdr));
-
     ElfN_Ehdr *header_new = (ElfN_Ehdr *)sread(new_exec, 0, sizeof(ElfN_Ehdr));
-    if (header == NULL) {
+    if (header_new == NULL) {
         return -1;
     }
 
-    u64 new_startpoint = last_load_phdr->p_offset + last_load_phdr->p_memsz;
-    (void)new_startpoint;
-#warning I THINK NEW_STARTPOINT MUST BE USED
     ft_printf("Startpoint: %p\n", header_new->e_entry);
-    header_new->e_entry = last_load_phdr->p_vaddr + last_load_phdr->p_memsz;
+    header_new->e_entry = new_startpoint;
     ft_printf("New startpoint: %p\nPayload size: %llx\n", header_new->e_entry, _payload64_size);
 
 
@@ -100,19 +106,21 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
      */
 
     ElfN_Phdr *new_last_load_phdr = (ElfN_Phdr *)sread(new_exec, (void *)last_load_phdr - bin_start, sizeof(ElfN_Phdr));
-    if (header == NULL) {
+    if (new_last_load_phdr == NULL) {
         return -1;
     }
 
-    //ElfN_Phdr *new_last_load_phdr = new_exec->data + ((void *)last_load_phdr - bin_start);
+    new_last_load_phdr->p_flags |= PF_X;
+    ft_printf("OLD last load header old size: %p\n", new_last_load_phdr->p_memsz);
+    ft_printf("OLD last load header new p_filesize: %p\n", new_last_load_phdr->p_filesz);
+    new_last_load_phdr->p_memsz += _payload64_size + bss_size;
+    new_last_load_phdr->p_filesz += _payload64_size;
+    ft_printf("New last load header new p_memsize: %p\n", new_last_load_phdr->p_memsz);
+    ft_printf("New last load header new p_filesize: %p\n", new_last_load_phdr->p_filesz);
+    // TODO SHOULD BE THE SAME
 
-    ft_printf("New last load header old size: %p\n", new_last_load_phdr->p_memsz);
-    new_last_load_phdr->p_memsz += _payload64_size;
-    ft_printf("New last load header new size: %p\n", new_last_load_phdr->p_memsz);
+//    ((void(*)(void))&_payload64)();
 
-    ((void(*)(void))&_payload64)();
-
-    //_payload64();
     sclose(new_exec); // check ret
     return 0;
 }

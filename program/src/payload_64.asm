@@ -2,6 +2,9 @@
 segment .text
 global _payload64
 _payload64:
+    mov eax, 60     ; x86_64 opcode for sys_exit
+    mov edi, 0     ; first argument
+    syscall
 	push rax
 	push rdx
 	push rsi
