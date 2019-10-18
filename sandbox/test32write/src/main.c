@@ -8,6 +8,7 @@
 
 typedef unsigned char u8;
 typedef unsigned int u32;
+typedef int i32;
 
 extern u8 _writer;
 extern u32 _writer_size;
@@ -15,8 +16,9 @@ extern u32 _writer_size;
 extern u8 _string;
 extern u8 _string2;
 extern u8 _test_fn;
+extern i32 _function_return;
 
-static void *symtab[] = {&_string, &_string2, &_test_fn};
+static void *symtab[] = {&_string, &_string2, &_test_fn, &_function_return};
 
 /*
  * find a binary pattern into a binary stream.
@@ -69,13 +71,21 @@ int test_modification(void)
 	    while ((s = (u32 *)smemchr(dup_data, &symtab[i], (size_t)_writer_size, sizeof(u32))) != NULL) {
 		    printf("founded at %p\n", s);
 		    *s = new_abs_addr;
-		    dup_data = s + sizeof(u32);
+		    dup_data = (char *)(s + sizeof(u32));
 	    }
     }
 
     printf("Before call...\n");
-    ((void(*)(void))data)();
-    ((void(*)(void))data)();
+    int r = ((int(*)(void))data)();
+    printf("Return value: %i\n", r);
+
+    u32 rel = (void *)&_function_return - (void *)&_writer;
+    u32 new_abs_addr = (u32)(data + rel);
+    *(i32 *)new_abs_addr = 42;
+
+    r = ((int(*)(void))data)();
+    printf("Return value: %i\n", r);
+
     munmap(data, 4096);
     return 0;
 }

@@ -3,6 +3,7 @@ global _writer
 global _string
 global _string2
 global _test_fn
+global _function_return
 _writer:
 	push ebp
 	mov ebp, esp
@@ -42,6 +43,8 @@ _test_fn:
 	pop ebp
 	ret
 
+_function_return: dd 0
+
 _next2:
 	mov eax, 4
 	mov ebx, 1
@@ -52,6 +55,7 @@ _next2:
 
 	call _test_fn
 
+	mov eax, dword [_function_return]
 	pop ebx
 
 	pop ebp
