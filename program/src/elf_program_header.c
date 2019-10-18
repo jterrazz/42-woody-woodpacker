@@ -3,7 +3,7 @@
 #include <elf.h>
 #include <stdlib.h>
 
-extern u64 _payload64;
+extern u8 _payload64;
 extern u64 _payload64_size;
 
 // TODO Transoform to generic
@@ -16,7 +16,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
     ElfN_Off offset = header->e_phoff;
     ft_printf("Offset: %p, %d entries of %d bytes\n", offset, header->e_phnum, header->e_phentsize);
 
-    ElfN_Phdr *phdr = secure_read(bin_start, bin_len, offset, header->e_phnum * header->e_phentsize);
+    ElfN_Phdr *phdr = (ElfN_Phdr *)secure_read(bin_start, bin_len, offset, header->e_phnum * header->e_phentsize);
     ft_printf("Program Headers:\n");
     ft_printf("Type    Offset       VirtualAddress     PhysAddr\n");
 
@@ -71,9 +71,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
         return -1;
     }
     u64 end_file_size = bin_len - last_load_phdr->p_offset - last_load_phdr->p_memsz;
-
-    u64 new_startpoint = last_load_phdr->p_offset + last_load_phdr->p_memsz;
-    // secure
+// secure
     int i = swrite(new_exec, bin_start , 0, last_load_phdr->p_offset + last_load_phdr->p_memsz);
     int j = swrite(new_exec, bin_start + last_load_phdr->p_offset + last_load_phdr->p_memsz, last_load_phdr->p_offset + last_load_phdr->p_memsz + _payload64_size, end_file_size);
     ft_printf("Will move data from %llx %llx = %llx\n", last_load_phdr->p_offset, last_load_phdr->p_memsz, last_load_phdr->p_offset + last_load_phdr->p_memsz);
@@ -81,7 +79,16 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     ft_printf("returns: %d %d %d\n", i, j, k);
 
-    ElfN_Ehdr *header_new = (ElfN_Ehdr *)secure_read(new_exec->data, bin_len + _payload64_size, 0, sizeof(ElfN_Ehdr));
+    //ElfN_Ehdr *header_new = (ElfN_Ehdr *)secure_read(new_exec->data, bin_len + _payload64_size, 0, sizeof(ElfN_Ehdr));
+
+    ElfN_Ehdr *header_new = (ElfN_Ehdr *)sread(new_exec, 0, sizeof(ElfN_Ehdr));
+    if (header == NULL) {
+        return -1;
+    }
+
+    u64 new_startpoint = last_load_phdr->p_offset + last_load_phdr->p_memsz;
+    (void)new_startpoint;
+#warning I THINK NEW_STARTPOINT MUST BE USED
     ft_printf("Startpoint: %p\n", header_new->e_entry);
     header_new->e_entry = last_load_phdr->p_vaddr + last_load_phdr->p_memsz;
     ft_printf("New startpoint: %p\nPayload size: %llx\n", header_new->e_entry, _payload64_size);
@@ -92,12 +99,20 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
      * Good to know. Programs like radare2 in visual mode only prints the instructions in dissaembly mode if it's inside the program section (calculated using the start ptr + size)
      */
 
-    ElfN_Phdr *new_last_load_phdr = new_exec->data + ((void *)last_load_phdr - bin_start);
+    ElfN_Phdr *new_last_load_phdr = (ElfN_Phdr *)sread(new_exec, (void *)last_load_phdr - bin_start, sizeof(ElfN_Phdr));
+    if (header == NULL) {
+        return -1;
+    }
+
+    //ElfN_Phdr *new_last_load_phdr = new_exec->data + ((void *)last_load_phdr - bin_start);
+
     ft_printf("New last load header old size: %p\n", new_last_load_phdr->p_memsz);
     new_last_load_phdr->p_memsz += _payload64_size;
     ft_printf("New last load header new size: %p\n", new_last_load_phdr->p_memsz);
 
-//    ((void(*)(void))_payload64)();
+    ((void(*)(void))&_payload64)();
 
+    //_payload64();
     sclose(new_exec); // check ret
+    return 0;
 }

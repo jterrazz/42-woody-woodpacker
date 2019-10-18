@@ -115,6 +115,7 @@ fclean:
 	make -C libft_ng fclean
 	rm -vf $(OBJ_C) $(OBJ_ASM)
 	rm -vf $(NAME)
+	rm -f tmpwoody
 
 re: fclean all
 

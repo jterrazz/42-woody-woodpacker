@@ -10,6 +10,12 @@
 #define perror(...) {}
 #endif
 
+struct stream {
+    int fd;
+    u8 *data;
+    size_t len;
+};
+
 /*
  * Open a file and map it
  */

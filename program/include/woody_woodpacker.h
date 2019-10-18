@@ -8,11 +8,7 @@ typedef unsigned short     u16;
 typedef unsigned int       u32;
 typedef unsigned long long u64;
 
-typedef struct stream {
-    int fd;
-    u8 *data;
-    size_t len;
-} STREAM;
+typedef struct stream STREAM;
 
 STREAM *sopen(const char *filename, size_t file_len);
 int sclose(STREAM *ctx);

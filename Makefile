@@ -13,12 +13,14 @@ fclean:
 	make -C sandbox fclean
 	rm -f woody_woodpacker
 	rm -f test
+	rm -f tmpwoody
 
 mrproper:
 	make -C program mrproper
 	make -C sandbox mrproper
 	rm -f woody_woodpacker
 	rm -f test
+	rm -f tmpwoody
 
 re: fclean all
 

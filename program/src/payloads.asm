@@ -38,7 +38,6 @@
 segment .text
 global _payload64
 _payload64:
-    ret
 	push rax
 	push rdx
 	push rsi

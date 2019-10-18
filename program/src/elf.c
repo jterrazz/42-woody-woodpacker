@@ -134,6 +134,7 @@ Elf64_Ehdr *parse_elf_header_64(u8 *data, size_t len);
 
 int dump_section_header_32(u8 *data, size_t len);
 int dump_section_header_64(u8 *data, size_t len);
+int dump_program_header_32(u8 *data, size_t len);
 int dump_program_header_64(u8 *data, size_t len);
 
 int read_elf(u8 *data, size_t len)
