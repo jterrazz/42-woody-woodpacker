@@ -173,25 +173,27 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
             was_moved = 1;
         }
 
-//        output_sh->sh_flags |= SHF_EXECINSTR;
         ft_printf("  %10llx %10llx %15llx %15d\n", output_sh->sh_offset, output_sh->sh_addr, output_sh->sh_addralign, was_moved);
         output_sh++;
     }
- // TODO Need to modify size of added BSS of old section
+
+    /*
+     * Add a new section header
+     */
     u64 new_sh_offset = new_sh_addr - (void *)output_header;
     u64 end_output_to_move_size = output_len - new_sh_offset - sizeof(ElfN_Shdr);
     if (swrite(output, new_sh_addr, new_sh_offset + sizeof(ElfN_Shdr), end_output_to_move_size))
         return -1;
 
     ElfN_Shdr *new_sh = new_sh_addr;
-    new_sh->sh_name = new_sh[-1].sh_name;
+    new_sh->sh_name = 0;
     new_sh->sh_type = SHT_PROGBITS;
-    new_sh->sh_flags = SHF_EXECINSTR;
-    new_sh->sh_addr = 0;
+    new_sh->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
+    new_sh->sh_addr = new_startpoint_offset;
     new_sh->sh_offset = new_startpoint_offset;
     new_sh->sh_size = aligned_payload64_size;
-    new_sh->sh_link = new_sh[-1].sh_link;
-    new_sh->sh_info =  new_sh[-1].sh_info;
+    new_sh->sh_link = 0;
+    new_sh->sh_info =  0;
     new_sh->sh_addralign = 16;
     new_sh->sh_entsize = 0;
 
