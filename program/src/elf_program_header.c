@@ -71,8 +71,14 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     u64 before_payload_size = last_load_phdr->p_offset + last_load_phdr->p_memsz;
     u64 last_load_bss_size = last_load_phdr->p_memsz - last_load_phdr->p_filesz;
-    u64 after_playload_size = bin_len - before_payload_size;
+    u64 after_payload_size = bin_len - before_payload_size;
     u64 new_startpoint_offset = before_payload_size + last_load_bss_size;
+    u64 aligned_payload64_size = (_payload64_size + 63) & ~63;
+
+    u64 shift_size = aligned_payload64_size + last_load_bss_size;
+
+
+    ft_printf("Aligned payload: %llx from original %llx", aligned_payload64_size, _payload64_size);
 
     ft_printf("Calculated BSS size to fill %llx (%llx - %llx)\n", last_load_bss_size, last_load_phdr->p_memsz, last_load_phdr->p_filesz);
 
@@ -82,7 +88,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     #define OUTPUT_FILENAME "./woody"
 
-    STREAM *output = sopen(OUTPUT_FILENAME, bin_len + _payload64_size + last_load_bss_size);
+    STREAM *output = sopen(OUTPUT_FILENAME, bin_len + shift_size);
     if (!output) {
         return -1;
     }
@@ -94,10 +100,10 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
     if (swrite(output, bin_start , 0, before_payload_size))
         return -1;
 
-    if (swrite(output, bin_start + before_payload_size, before_payload_size + _payload64_size + last_load_bss_size, after_playload_size))
+    if (swrite(output, bin_start + before_payload_size, before_payload_size + shift_size, after_payload_size))
         return -1;
 
-    void *bss_section = sread(output, before_payload_size, last_load_bss_size + _payload64_size);
+    void *bss_section = sread(output, before_payload_size, last_load_bss_size + aligned_payload64_size);
     if (!bss_section)
         return -1;
 
@@ -130,8 +136,8 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     output_last_load_header->p_flags |= PF_X;
     ft_printf("Output last load header: OLD MEMSIZE: %lld, OLD FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
-    output_last_load_header->p_memsz += _payload64_size;
-    output_last_load_header->p_filesz += _payload64_size + last_load_bss_size;
+    output_last_load_header->p_memsz += aligned_payload64_size;
+    output_last_load_header->p_filesz += shift_size;
     ft_printf("Output last load header: NEW MEMSIZE: %lld, NEW FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
 
     /*
@@ -140,7 +146,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     u64 sh_offset = header->e_shoff;
     if (sh_offset > before_payload_size)
-        sh_offset += _payload64_size + last_load_bss_size;
+        sh_offset += shift_size;
     output_header->e_shoff = sh_offset;
 
     ft_printf("Will access the first section header at: %llx\n", sh_offset);
@@ -148,16 +154,23 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
     if (!output_sh)
         return -1;
 
-    ft_printf("Output section headers:\n");
-    ft_printf("  %10s %10s %10s\n", "sh_offset", "sh_addr", "sh_addralign");
+    ft_printf("New section headers:\n");
+    ft_printf("sections will be moved by %lld bytes\n", shift_size);
+    ft_printf("  %10s %10s %15s %10s\n", "sh_offset", "sh_addr", "sh_addralign", "was shifted");
     for (u16 i = 0; i < header->e_shnum ; i++) {
-        ft_printf("  %10p %10p %10p\n", output_sh->sh_offset, output_sh->sh_addr, output_sh->sh_addralign);
+        u8 was_moved = 0;
+        if (output_sh->sh_offset > before_payload_size) {
+            output_sh->sh_offset += shift_size;
+            was_moved = 1;
+        }
+
+        output_sh->sh_flags |= SHF_EXECINSTR;
+
+        ft_printf("  %10llx %10llx %15llx %15d\n", output_sh->sh_offset, output_sh->sh_addr, output_sh->sh_addralign, was_moved);
+
         output_sh++;
     }
 
-
-
-        // TODO Move header->e_shoff too if was move
 
 
 
