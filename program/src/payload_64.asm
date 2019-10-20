@@ -5,6 +5,7 @@ _payload64:
 ;    mov eax, 60     ; x86_64 opcode for sys_exit
 ;    mov edi, 0     ; first argument
 ;    syscall
+    pushfq
 	push rax
 	push rdx
 	push rsi

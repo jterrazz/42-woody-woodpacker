@@ -180,6 +180,9 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
     /*
      * Add a new section header
      */
+    new_sh_addr -= sizeof(ElfN_Shdr); // TODO Only do that if the last segment was a BSS and had empty space
+    ((ElfN_Shdr *)new_sh_addr)->sh_offset += shift_size;
+
     u64 new_sh_offset = new_sh_addr - (void *)output_header;
     u64 end_output_to_move_size = output_len - new_sh_offset - sizeof(ElfN_Shdr);
     if (swrite(output, new_sh_addr, new_sh_offset + sizeof(ElfN_Shdr), end_output_to_move_size))
@@ -189,7 +192,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
     new_sh->sh_name = 0;
     new_sh->sh_type = SHT_PROGBITS;
     new_sh->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
-    new_sh->sh_addr = new_startpoint_offset;
+    new_sh->sh_addr = new_startpoint_offset; // TODO This should also works when addr is not 0
     new_sh->sh_offset = new_startpoint_offset;
     new_sh->sh_size = aligned_payload64_size;
     new_sh->sh_link = 0;
