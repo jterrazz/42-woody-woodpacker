@@ -4,9 +4,9 @@ CC = gcc
 AS = nasm
 
 ifeq ($(DEBUG),yes)
-CFLAGS = -m64 -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra
+CFLAGS = -Wl,--gc-sections -m64 -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra
 else
-CFLAGS = -m64 -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
+CFLAGS = -Wl,--gc-sections -m64 -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
 endif
 IFLAGS = -I./include
 ASFLAGS = -f elf64
