@@ -1,4 +1,4 @@
-TARGET = jbe_encode jbe_decode mtf_encode mtf_decode get_binary_weight
+TARGET = jbe_encode jbe_decode mtf_encode mtf_decode rle_encode rle_decode get_binary_weight
 
 CC = gcc
 AS = nasm
@@ -14,11 +14,11 @@ ASFLAGS = -f elf64
 VPATH = src
 OBJDIR	= obj
 
-SRC_C = common file
+C_FILES = common file
 SRC_ASM =
 VPATH += include
 
-OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
+C_FILES := $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(C_FILES)))))
 OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))
 
 DEPENDS = $(OBJ_C:%.o=%.d) $(OBJDIR)/jbe.d $(OBJDIR)/mtf.d
@@ -27,7 +27,7 @@ DEPENDS = $(OBJ_C:%.o=%.d) $(OBJDIR)/jbe.d $(OBJDIR)/mtf.d
 
 all: $(TARGET)
 link = $(CC) $(CFLAGS) $^ -o $@
-common_objects = $(OBJ_C) $(OBJ_ASM)
+common_objects = $(C_FILES) $(OBJ_ASM)
 
 jbe_encode: $(OBJDIR)/jbe_encode.o $(OBJDIR)/jbe.o $(common_objects)
 	$(link)
@@ -41,10 +41,13 @@ mtf_encode: $(OBJDIR)/mtf_encode.o $(OBJDIR)/mtf.o $(common_objects)
 mtf_decode: $(OBJDIR)/mtf_decode.o $(OBJDIR)/mtf.o $(common_objects)
 	$(link)
 
-get_binary_weight: $(OBJDIR)/get_binary_weight.o
+rle_encode: $(OBJDIR)/rle_encode.o $(OBJDIR)/rle.o $(common_objects)
 	$(link)
 
-mtf: $(OBJDIR)/mtf_main.o $(common_objects)
+rle_decode: $(OBJDIR)/rle_decode.o $(OBJDIR)/rle.o $(common_objects)
+	$(link)
+
+get_binary_weight: $(OBJDIR)/get_binary_weight.o
 	$(link)
 
 -include $(DEPENDS)

@@ -1,3 +1,7 @@
 jbe_encode
 jbe_decode
-mtf
+mtf_encode
+mtf_decode
+rle_encode
+rle_decode
+get_binary_weight
