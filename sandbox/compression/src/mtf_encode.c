@@ -1,8 +1,8 @@
 /*
- * Jbit decoding (JBE)
- * see https://arxiv.org/pdf/1209.1045.pdf
+ * Move To Front decoding (MTF)
+ * see https://en.wikipedia.org/wiki/Move-to-front_transform
  */
-#include "jbe.h"
+#include "mtf.h"
 #include "common.h"
 
 #include <stdio.h>
@@ -41,9 +41,9 @@ int main(int argc, char *argv[])
 	}
 
 	size_t new_len = file_len;
-	char *new_data = (char *)jbe_decode(data, &new_len);
+	char *new_data = (char *)mtf_encode(data, &new_len);
 	if (new_data == NULL) {
-		dprintf(STDERR_FILENO, "JBE decode failed\n");
+		dprintf(STDERR_FILENO, "MTF encode failed\n");
 		exit(1);
 	}
 	printf("Output file len: %zu\n", new_len);

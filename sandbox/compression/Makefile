@@ -1,4 +1,4 @@
-TARGET = jbe_encode jbe_decode mtf
+TARGET = jbe_encode jbe_decode mtf_encode mtf_decode
 
 CC = gcc
 AS = nasm
@@ -14,7 +14,7 @@ ASFLAGS = -f elf64
 VPATH = src
 OBJDIR	= obj
 
-SRC_C = common file jbe
+SRC_C = common file jbe mtf
 SRC_ASM =
 HEADERS = jbe.h common.h
 VPATH += include
@@ -32,6 +32,12 @@ jbe_encode: $(OBJDIR)/jbe_encode.o $(common_objects)
 	$(link)
 
 jbe_decode: $(OBJDIR)/jbe_decode.o $(common_objects)
+	$(link)
+
+mtf_encode: $(OBJDIR)/mtf_encode.o $(common_objects)
+	$(link)
+
+mtf_decode: $(OBJDIR)/mtf_decode.o $(common_objects)
 	$(link)
 
 mtf: $(OBJDIR)/mtf_main.o $(common_objects)

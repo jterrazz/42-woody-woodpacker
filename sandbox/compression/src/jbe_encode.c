@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	size_t new_len = file_len;
 	char *new_data = (char *)jbe_encode(data, &new_len);
 	if (new_data == NULL) {
-		dprintf(STDERR_FILENO, "JBE encore failed\n");
+		dprintf(STDERR_FILENO, "JBE encode failed\n");
 		exit(1);
 	}
 	printf("Output file len: %zu\n", new_len);
