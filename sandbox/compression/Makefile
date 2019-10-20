@@ -1,22 +1,23 @@
-TARGET = jbe mtf
+TARGET = jbe_encode jbe_decode mtf
 
 CC = gcc
 AS = nasm
 
 ifeq ($(DEBUG),yes)
-CFLAGS = -m32 -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra
+CFLAGS = -m64 -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra
 else
-CFLAGS = -m32 -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
+CFLAGS = -m64 -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
 endif
 IFLAGS = -I./include
-ASFLAGS = -f elf32
+ASFLAGS = -f elf64
 
 VPATH = src
 OBJDIR	= obj
 
-SRC_C = common
+SRC_C = common file jbe
 SRC_ASM =
-HEADERS =
+HEADERS = jbe.h common.h
+VPATH += include
 
 OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
 OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))
@@ -27,7 +28,10 @@ all: $(TARGET)
 link = $(CC) $(CFLAGS) $^ -o $@
 common_objects = $(OBJ_C) $(OBJ_ASM)
 
-jbe: $(OBJDIR)/jbe_main.o $(common_objects)
+jbe_encode: $(OBJDIR)/jbe_encode.o $(common_objects)
+	$(link)
+
+jbe_decode: $(OBJDIR)/jbe_decode.o $(common_objects)
 	$(link)
 
 mtf: $(OBJDIR)/mtf_main.o $(common_objects)
