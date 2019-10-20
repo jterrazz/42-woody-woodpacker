@@ -115,6 +115,6 @@ int swrite(STREAM *ctx, void *content, size_t offset, size_t len)
 	if (ctx == NULL || content == NULL || offset >= ctx->len || len > ctx->len) {
 		return -1;
 	}
-	ft_memcpy(ctx->data + offset, content, len);
+	ft_memmove(ctx->data + offset, content, len);
 	return 0;
 }

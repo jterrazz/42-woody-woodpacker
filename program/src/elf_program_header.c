@@ -88,7 +88,9 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     #define OUTPUT_FILENAME "./woody"
 
-    STREAM *output = sopen(OUTPUT_FILENAME, bin_len + shift_size);
+    u64 output_len = bin_len + shift_size + sizeof(ElfN_Shdr); // Maybe do ElfN_Shdr in an other place
+
+    STREAM *output = sopen(OUTPUT_FILENAME, output_len);
     if (!output) {
         return -1;
     }
@@ -122,6 +124,8 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
     ft_printf("Will modify the original startpoint %llx to %llx\n", output_header->e_entry, new_startpoint_offset);
     output_header->e_entry = new_startpoint_offset;
+    output_header->e_shnum += 1;
+    output_header->e_shstrndx += 1;
 
     /*
      * Good to know. Programs like radare2 in visual mode only prints the instructions in dissaembly mode
@@ -150,33 +154,48 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
     output_header->e_shoff = sh_offset;
 
     ft_printf("Will access the first section header at: %llx\n", sh_offset);
-    ElfN_Shdr *output_sh = sread(output, sh_offset, sizeof(ElfN_Shdr) * header->e_shnum);
+    ElfN_Shdr *output_sh = sread(output, sh_offset, sizeof(ElfN_Shdr) * output_header->e_shnum);
     if (!output_sh)
         return -1;
 
     ft_printf("New section headers:\n");
     ft_printf("sections will be moved by %lld bytes\n", shift_size);
     ft_printf("  %10s %10s %15s %10s\n", "sh_offset", "sh_addr", "sh_addralign", "was shifted");
+
+    void *new_sh_addr = 0;
     for (u16 i = 0; i < header->e_shnum ; i++) {
         u8 was_moved = 0;
         if (output_sh->sh_offset > before_payload_size) {
+            if (!new_sh_addr) {
+                new_sh_addr = output_sh;
+            }
             output_sh->sh_offset += shift_size;
             was_moved = 1;
         }
 
-        output_sh->sh_flags |= SHF_EXECINSTR;
-
+//        output_sh->sh_flags |= SHF_EXECINSTR;
         ft_printf("  %10llx %10llx %15llx %15d\n", output_sh->sh_offset, output_sh->sh_addr, output_sh->sh_addralign, was_moved);
-
         output_sh++;
     }
+ // TODO Need to modify size of added BSS of old section
+    u64 new_sh_offset = new_sh_addr - (void *)output_header;
+    u64 end_output_to_move_size = output_len - new_sh_offset - sizeof(ElfN_Shdr);
+    if (swrite(output, new_sh_addr, new_sh_offset + sizeof(ElfN_Shdr), end_output_to_move_size))
+        return -1;
 
+    ElfN_Shdr *new_sh = new_sh_addr;
+    new_sh->sh_name = new_sh[-1].sh_name;
+    new_sh->sh_type = SHT_PROGBITS;
+    new_sh->sh_flags = SHF_EXECINSTR;
+    new_sh->sh_addr = 0;
+    new_sh->sh_offset = new_startpoint_offset;
+    new_sh->sh_size = aligned_payload64_size;
+    new_sh->sh_link = new_sh[-1].sh_link;
+    new_sh->sh_info =  new_sh[-1].sh_info;
+    new_sh->sh_addralign = 16;
+    new_sh->sh_entsize = 0;
 
-
-
-    // TODO Align Moved data (take last number in hex)
 //    ((void(*)(void))&_payload64)();
-
     sclose(output); // check ret
     return 0;
 }
