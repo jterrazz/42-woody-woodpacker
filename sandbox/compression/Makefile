@@ -59,6 +59,7 @@ $(OBJDIR)/%.o: %.asm Makefile
 
 clean:
 	find $(OBJDIR) -type f -name '*.o' -delete
+	find $(OBJDIR) -type f -name '*.d' -delete
 
 fclean: clean
 	@rm -vf $(TARGET)
