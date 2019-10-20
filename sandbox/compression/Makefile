@@ -1,4 +1,4 @@
-TARGET = jbe_encode jbe_decode mtf_encode mtf_decode
+TARGET = jbe_encode jbe_decode mtf_encode mtf_decode get_binary_weight
 
 CC = gcc
 AS = nasm
@@ -14,13 +14,14 @@ ASFLAGS = -f elf64
 VPATH = src
 OBJDIR	= obj
 
-SRC_C = common file jbe mtf
+SRC_C = common file
 SRC_ASM =
-HEADERS = jbe.h common.h
 VPATH += include
 
 OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
 OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))
+
+DEPENDS = $(OBJ_C:%.o=%.d) $(OBJDIR)/jbe.d $(OBJDIR)/mtf.d
 
 .PHONY: all re clean fclean help mrproper
 
@@ -28,23 +29,27 @@ all: $(TARGET)
 link = $(CC) $(CFLAGS) $^ -o $@
 common_objects = $(OBJ_C) $(OBJ_ASM)
 
-jbe_encode: $(OBJDIR)/jbe_encode.o $(common_objects)
+jbe_encode: $(OBJDIR)/jbe_encode.o $(OBJDIR)/jbe.o $(common_objects)
 	$(link)
 
-jbe_decode: $(OBJDIR)/jbe_decode.o $(common_objects)
+jbe_decode: $(OBJDIR)/jbe_decode.o $(OBJDIR)/jbe.o $(common_objects)
 	$(link)
 
-mtf_encode: $(OBJDIR)/mtf_encode.o $(common_objects)
+mtf_encode: $(OBJDIR)/mtf_encode.o $(OBJDIR)/mtf.o $(common_objects)
 	$(link)
 
-mtf_decode: $(OBJDIR)/mtf_decode.o $(common_objects)
+mtf_decode: $(OBJDIR)/mtf_decode.o $(OBJDIR)/mtf.o $(common_objects)
+	$(link)
+
+get_binary_weight: $(OBJDIR)/get_binary_weight.o
 	$(link)
 
 mtf: $(OBJDIR)/mtf_main.o $(common_objects)
 	$(link)
 
+-include $(DEPENDS)
 $(OBJDIR)/%.o: %.c $(HEADERS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
+	$(CC) -MD -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
 $(OBJDIR)/%.o: %.asm Makefile
 	$(AS) $(ASFLAGS) -o $@ $<
