@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef SILENT
 #define perror(...) {}
@@ -15,6 +16,10 @@ struct stream {
     u8 *data;
     size_t len;
 };
+
+#define WRITE_BUF_LEN (4096 * 4)
+
+static u8 write_buf[WRITE_BUF_LEN] = {0};
 
 /*
  * Open a file and map it
@@ -31,14 +36,21 @@ STREAM *sopen(const char *filename, size_t file_len)
 		return NULL;
 	}
 
-	for (size_t i = 0; i < file_len; i++) {
-		int ret = write(fd, "\0", 1);
+	size_t i = file_len;
+	while (true) {
+		int ret = write(fd, &write_buf, i < WRITE_BUF_LEN ? i : WRITE_BUF_LEN);
 		if (ret < 0) {
 			perror("write");
 			unlink(filename);
 			return NULL;
 		}
+		if (i < WRITE_BUF_LEN) {
+			break;
+		} else {
+			i -= WRITE_BUF_LEN;
+		}
 	}
+
 	off_t off = lseek(fd, 0, SEEK_SET);
 	if (off == -1) {
 		perror("lseek");
