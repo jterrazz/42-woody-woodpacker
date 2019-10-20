@@ -63,64 +63,107 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
         phdr++;
     }
 
-    ft_printf("Last LOAD header is at offset: %llx with size %llx\n", last_load_phdr->p_offset, last_load_phdr->p_memsz);
+    ft_printf("Last LOAD is at offset: %llx with a memsize of %llx bytes and filesize of %llx vytes\n", last_load_phdr->p_offset, last_load_phdr->p_memsz, last_load_phdr->p_filesz);
 
-
-    u64 before_end_load_size = bin_len - last_load_phdr->p_offset + last_load_phdr->p_memsz;
-    u64 after_load_size = bin_len - last_load_phdr->p_offset - last_load_phdr->p_memsz;
-    u64 bss_size = last_load_phdr->p_memsz - last_load_phdr->p_filesz;
-    u64 new_startpoint = bss_size + before_end_load_size;
-
-    STREAM *new_exec = sopen("./tmpwoody", bin_len + _payload64_size + bss_size);
-    if (!new_exec) {
-        return -1;
-    }
-
-// secure
-    int i = swrite(new_exec, bin_start , 0, before_end_load_size);
-    int j = swrite(new_exec, bin_start + before_end_load_size, before_end_load_size + _payload64_size + bss_size, after_load_size);
-
-    void *bss_section = sread(new_exec, before_end_load_size, _payload64_size);
-    if (!bss_section) {
-        return -1;
-    }
-    ft_bzero(bss_section, _payload64_size);
-    ft_printf("Will move the data after last load from %llx %llx = %llx\n", last_load_phdr->p_offset, last_load_phdr->p_memsz, last_load_phdr->p_offset + last_load_phdr->p_memsz);
-    int k = swrite(new_exec, &_payload64, new_startpoint, _payload64_size);
-
-    ft_printf("returns: %d %d %d\n", i, j, k);
-
-    ElfN_Ehdr *header_new = (ElfN_Ehdr *)sread(new_exec, 0, sizeof(ElfN_Ehdr));
-    if (header_new == NULL) {
-        return -1;
-    }
-
-    ft_printf("Startpoint: %p\n", header_new->e_entry);
-    header_new->e_entry = new_startpoint;
-    ft_printf("New startpoint: %p\nPayload size: %llx\n", header_new->e_entry, _payload64_size);
-
-
-    // Secure
     /*
-     * Good to know. Programs like radare2 in visual mode only prints the instructions in dissaembly mode if it's inside the program section (calculated using the start ptr + size)
+     * Start the creation of new exec
      */
 
-    ElfN_Phdr *new_last_load_phdr = (ElfN_Phdr *)sread(new_exec, (void *)last_load_phdr - bin_start, sizeof(ElfN_Phdr));
-    if (new_last_load_phdr == NULL) {
+    u64 before_payload_size = last_load_phdr->p_offset + last_load_phdr->p_memsz;
+    u64 last_load_bss_size = last_load_phdr->p_memsz - last_load_phdr->p_filesz;
+    u64 after_playload_size = bin_len - before_payload_size;
+    u64 new_startpoint_offset = before_payload_size + last_load_bss_size;
+
+    ft_printf("Calculated BSS size to fill %llx (%llx - %llx)\n", last_load_bss_size, last_load_phdr->p_memsz, last_load_phdr->p_filesz);
+
+    /*
+     * Creates the new executable
+     */
+
+    #define OUTPUT_FILENAME "./woody"
+
+    STREAM *output = sopen(OUTPUT_FILENAME, bin_len + _payload64_size + last_load_bss_size);
+    if (!output) {
         return -1;
     }
 
-    new_last_load_phdr->p_flags |= PF_X;
-    ft_printf("OLD last load header old size: %p\n", new_last_load_phdr->p_memsz);
-    ft_printf("OLD last load header new p_filesize: %p\n", new_last_load_phdr->p_filesz);
-    new_last_load_phdr->p_memsz += _payload64_size + bss_size;
-    new_last_load_phdr->p_filesz += _payload64_size;
-    ft_printf("New last load header new p_memsize: %p\n", new_last_load_phdr->p_memsz);
-    ft_printf("New last load header new p_filesize: %p\n", new_last_load_phdr->p_filesz);
-    // TODO SHOULD BE THE SAME
+    /*
+     * Moves data to insert the payload
+     */
 
+    if (swrite(output, bin_start , 0, before_payload_size))
+        return -1;
+
+    if (swrite(output, bin_start + before_payload_size, before_payload_size + _payload64_size + last_load_bss_size, after_playload_size))
+        return -1;
+
+    void *bss_section = sread(output, before_payload_size, last_load_bss_size + _payload64_size);
+    if (!bss_section)
+        return -1;
+
+    ft_bzero(bss_section, last_load_bss_size);
+    ft_printf("Will copy the payload of %llx bytes at offset %llx\n", _payload64_size, new_startpoint_offset);
+    if (swrite(output, &_payload64, new_startpoint_offset, _payload64_size))
+        return -1;
+
+    /*
+     * Modify the ELF header
+     */
+
+    ElfN_Ehdr *output_header = (ElfN_Ehdr *)sread(output, 0, sizeof(ElfN_Ehdr));
+    if (output_header == NULL)
+        return -1;
+
+    ft_printf("Will modify the original startpoint %llx to %llx\n", output_header->e_entry, new_startpoint_offset);
+    output_header->e_entry = new_startpoint_offset;
+
+    /*
+     * Good to know. Programs like radare2 in visual mode only prints the instructions in dissaembly mode
+     * if it's inside the program section (calculated using the start ptr + size)
+     */
+
+    u64 last_load_header_offset = (void *)last_load_phdr - bin_start;
+
+    ElfN_Phdr *output_last_load_header = (ElfN_Phdr *)sread(output, last_load_header_offset, sizeof(ElfN_Phdr));
+    if (output_last_load_header == NULL)
+        return -1;
+
+    output_last_load_header->p_flags |= PF_X;
+    ft_printf("Output last load header: OLD MEMSIZE: %lld, OLD FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
+    output_last_load_header->p_memsz += _payload64_size;
+    output_last_load_header->p_filesz += _payload64_size + last_load_bss_size;
+    ft_printf("Output last load header: NEW MEMSIZE: %lld, NEW FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
+
+    /*
+     * Modify the ELF section headers to reflect the new offset.
+     */
+
+    u64 sh_offset = header->e_shoff;
+    if (sh_offset > before_payload_size)
+        sh_offset += _payload64_size + last_load_bss_size;
+    output_header->e_shoff = sh_offset;
+
+    ft_printf("Will access the first section header at: %llx\n", sh_offset);
+    ElfN_Shdr *output_sh = sread(output, sh_offset, sizeof(ElfN_Shdr) * header->e_shnum);
+    if (!output_sh)
+        return -1;
+
+    ft_printf("Output section headers:\n");
+    ft_printf("  %10s %10s %10s\n", "sh_offset", "sh_addr", "sh_addralign");
+    for (u16 i = 0; i < header->e_shnum ; i++) {
+        ft_printf("  %10p %10p %10p\n", output_sh->sh_offset, output_sh->sh_addr, output_sh->sh_addralign);
+        output_sh++;
+    }
+
+
+
+        // TODO Move header->e_shoff too if was move
+
+
+
+    // TODO Align Moved data (take last number in hex)
 //    ((void(*)(void))&_payload64)();
 
-    sclose(new_exec); // check ret
+    sclose(output); // check ret
     return 0;
 }

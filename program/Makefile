@@ -90,6 +90,7 @@ $(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makef
 	-D ElfN_Ehdr=Elf32_Ehdr \
 	-D ElfN_Off=Elf32_Off \
 	-D ElfN_Phdr=Elf32_Phdr \
+	-D ElfN_Shdr=Elf32_Shdr \
 	-D _32BITS
 
 $(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
@@ -98,6 +99,7 @@ $(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makef
 	-D ElfN_Ehdr=Elf64_Ehdr \
 	-D ElfN_Off=Elf64_Off \
 	-D ElfN_Phdr=Elf64_Phdr \
+	-D ElfN_Shdr=Elf64_Shdr \
 	-D _64BITS
 
 # asm files
