@@ -1,4 +1,4 @@
-TARGET = jbe_encode jbe_decode mtf_encode mtf_decode rle_encode rle_decode get_binary_weight check_frequency
+TARGET = jbe_encode jbe_decode mtf_encode mtf_decode rle_encode rle_decode dhe_encode dhe_decode get_binary_weight check_frequency
 
 CC = gcc
 AS = nasm
@@ -49,6 +49,12 @@ rle_encode: $(OBJDIR)/rle_encode.o $(OBJDIR)/rle.o $(common_objects)
 	$(link)
 
 rle_decode: $(OBJDIR)/rle_decode.o $(OBJDIR)/rle.o $(common_objects)
+	$(link)
+
+dhe_encode: $(OBJDIR)/dhe_encode.o $(OBJDIR)/dhe.o $(common_objects)
+	$(link)
+
+dhe_decode: $(OBJDIR)/dhe_decode.o $(OBJDIR)/dhe.o $(common_objects)
 	$(link)
 
 get_binary_weight: $(OBJDIR)/get_binary_weight.o

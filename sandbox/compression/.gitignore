@@ -4,5 +4,7 @@ mtf_encode
 mtf_decode
 rle_encode
 rle_decode
+dhe_encode
+dhe_decode
 get_binary_weight
 check_frequency

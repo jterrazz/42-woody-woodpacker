@@ -22,6 +22,10 @@ case "$2" in
 		echo "MTF code";
 		encoder="./mtf_encode"; decoder="./mtf_decode";
 		;;
+	dhe)
+		echo "DHE code";
+		encoder="./dhe_encode"; decoder="./dhe_decode";
+		;;
 	*)
 		echo "Usage: $0 path {jbe|rle|mtf}"
 		exit 1
