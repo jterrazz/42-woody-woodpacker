@@ -1,3 +1,6 @@
+/*
+ * Run Length Encoding (RLE)
+ */
 #include "rle.h"
 
 #include <stdio.h>

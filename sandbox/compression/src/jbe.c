@@ -1,3 +1,7 @@
+/*
+ * Jbit encoding (JBE)
+ * see https://arxiv.org/pdf/1209.1045.pdf
+ */
 #include "jbe.h"
 
 #include <stdio.h>

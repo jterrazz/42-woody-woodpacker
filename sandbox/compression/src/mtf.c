@@ -1,3 +1,7 @@
+/*
+ * Move To Front decoding (MTF)
+ * see https://en.wikipedia.org/wiki/Move-to-front_transform
+ */
 #include "mtf.h"
 
 #include <assert.h>

@@ -55,7 +55,7 @@ get_binary_weight: $(OBJDIR)/get_binary_weight.o
 	$(link)
 
 -include $(DEPENDS)
-$(OBJDIR)/%.o: %.c $(HEADERS) Makefile
+$(OBJDIR)/%.o: %.c $(HEADERS) Makefile intro.c end.c
 	$(CC) -MD -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
 $(OBJDIR)/%.o: %.asm Makefile
