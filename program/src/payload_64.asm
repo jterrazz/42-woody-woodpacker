@@ -5,7 +5,6 @@ _payload64:
 ;    mov eax, 60     ; x86_64 opcode for sys_exit
 ;    mov edi, 0     ; first argument
 ;    syscall
-    jmp $
 ;    pushfq
 	push rax
 	push rdx
@@ -37,7 +36,8 @@ _payload64:
 	pop rsi
 	pop rdx
 	pop rax
-	ret ; rm
+
+	jmp $
 ;	jmp [rel .encrypt] ; Replace by the start of the encrypted data
 .encrypted_data_start: dq 0
 .encrypted_data_len: dq 0
