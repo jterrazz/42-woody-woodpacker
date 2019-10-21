@@ -29,7 +29,9 @@ int main(int argc, char *argv[])
 	}
 	size_t file_len = (size_t)off;
 
+#ifndef SILENT
 	printf("Mapping a file of len: %zu\n", file_len);
+#endif
 
 	off = lseek(fd, 0, SEEK_SET);
 	if (off == -1) {
@@ -46,7 +48,10 @@ int main(int argc, char *argv[])
 		dprintf(STDERR_FILENO, "JBE encode failed\n");
 		exit(1);
 	}
+
+#ifndef SILENT
 	printf("Output file len: %zu\n", new_len);
+#endif
 
 	STREAM *out = sopen(argv[2], new_len);
 	if (out == NULL) {

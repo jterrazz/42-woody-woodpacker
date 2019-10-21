@@ -11,6 +11,10 @@ endif
 IFLAGS = -I./include
 ASFLAGS = -f elf64
 
+ifeq ($(SILENT),yes)
+CFLAGS += -D SILENT
+endif
+
 VPATH = src
 OBJDIR	= obj
 
