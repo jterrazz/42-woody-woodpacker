@@ -180,7 +180,7 @@ void *dhe_encode(const void *_data, size_t *len)
 	recursive_search(huffman_tree, root_idx, 0, 0, regs);
 
 	for (u32 i = 0; i < NB_SYMB; i++) {
-		printf("%2x: %9d bits: %2u, %2x map: %8x\n", huffman_tree[i].leaf.value, huffman_tree[i].weight, regs[i].bits, regs[i].value, regs[i].map);
+		//printf("%2x: %9d bits: %2u, %2x map: %8x\n", huffman_tree[i].leaf.value, huffman_tree[i].weight, regs[i].bits, regs[i].value, regs[i].map);
 		assert(huffman_tree[i].leaf.value == regs[i].value || regs[i].bits == 0);
 	}
 
@@ -189,12 +189,12 @@ void *dhe_encode(const void *_data, size_t *len)
 	size_t projected_len = 0;
 	for (size_t i = 0; i < *len; i++) {
 		if (regs[data[i]].bits == 0) {
-			printf("0 bit char -> %hhx\n", data[i]);
+			//printf("0 bit char -> %hhx\n", data[i]);
 		}
 		assert(regs[data[i]].bits != 0);
 		projected_len += regs[data[i]].bits;
 	}
-	printf("Projected Len: %zu: in bits %zu\n", projected_len / 8, projected_len);
+	//printf("Projected Len: %zu: in bits %zu\n", projected_len / 8, projected_len);
 
 	assert(sizeof(union serialized_form) == 4);
 
@@ -244,10 +244,60 @@ void *dhe_encode(const void *_data, size_t *len)
 	return (void *)out;
 }
 
-void *dhe_decode(const void *data, size_t *len)
+void *dhe_decode(const void *_data, size_t *len)
 {
-	(void)len;
-	return (void *)data;
+	assert(sizeof(struct DheHeader) == 16 && sizeof(DHE_MAGIC) - 1 == 4);
+
+	assert(_data != NULL
+	       && *len >= sizeof(struct DheHeader) + 2 * NB_SYMB * sizeof(union serialized_form));
+
+	const u8 *data = (const u8 *)_data;
+	struct DheHeader *header = (struct DheHeader *)data;
+
+	if (memcmp(&header->magic[0], DHE_MAGIC, sizeof(DHE_MAGIC) - 1) != 0) {
+		dprintf(STDERR_FILENO, "Bad magic\n");
+		return NULL;
+	}
+
+#ifndef _42_
+	u8 *out = (u8 *)calloc(1, header->uncompressed_len);
+#else
+	u8 *out = (u8 *)malloc(header->uncompressed_len);
+#endif
+	if (out == NULL) {
+		dprintf(STDERR_FILENO, "Allocation error\n");
+		return NULL;
+	}
+#ifdef _42_
+	ft_bzero(out, header->uncompressed_len);
+#endif
+
+	const u16 root_idx = header->huffman_tree_root_idx;
+	// Put a pointer at the begin of the huffman table
+	const union serialized_form *huffman_tree = (union serialized_form *)(data + sizeof(struct DheHeader));
+	// Put a pointer at the begin of map_array
+	const u8 *map = data + sizeof(struct DheHeader) + 2 * NB_SYMB * sizeof(union serialized_form);
+
+	u32 bit_offset = 0;
+	for (u32 i = 0; i < header->uncompressed_len; i++) {
+		u16 idx = root_idx;
+		while (idx >= NB_SYMB) {
+			if (((*map >> bit_offset) & 0x1) == 0x1) {
+				idx = huffman_tree[idx].node.index_right;
+			} else {
+				idx = huffman_tree[idx].node.index_left;
+			}
+			if (bit_offset == 7) {
+				bit_offset = 0;
+				map += 1;
+			} else {
+				bit_offset += 1;
+			}
+		}
+		out[i] = (u8)huffman_tree[idx].leaf.value;
+	}
+	*len = header->uncompressed_len;
+	return (void *)out;
 }
 
 static void leaves_bubble_sort(struct btree *huffman_tree)
@@ -296,7 +346,9 @@ static void serialize_huffman_tree(u8 *stream, struct btree *huffman_tree)
 {
 	union serialized_form *sf = (union serialized_form *)stream;
 	for (u16 idx = 0; idx < NB_SYMB * 2; idx++) {
-		sf[idx] = (union serialized_form)huffman_tree[idx].node;
+		if (huffman_tree[idx].weight != 0) {
+			sf[idx] = (union serialized_form)huffman_tree[idx].node;
+		}
 	}
 }
 
