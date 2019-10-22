@@ -56,6 +56,7 @@ struct btree {
 struct regs {
 	u32 value;
 	u32 bits;
+	u32 map;
 };
 
 /*
@@ -69,7 +70,7 @@ union serialized_form {
 };
 
 static void serialize_huffman_tree(u8 *stream, struct btree *huffman_tree);
-static void recursive_search(struct btree *huffman_tree, u16 root_idx, u32 deep, struct regs regs[NB_SYMB]);
+static void recursive_search(struct btree *huffman_tree, u16 root_idx, u32 deep, u32 map, struct regs regs[NB_SYMB]);
 
 static void leaves_bubble_sort(struct btree *huffman_tree);
 static void regs_replacement(struct regs regs[NB_SYMB]);
@@ -176,10 +177,10 @@ void *dhe_encode(const void *_data, size_t *len)
 	assert(huffman_tree[root_idx].weight == *len);
 
 	struct regs regs[NB_SYMB] = {0};
-	recursive_search(huffman_tree, root_idx, 0, regs);
+	recursive_search(huffman_tree, root_idx, 0, 0, regs);
 
 	for (u32 i = 0; i < NB_SYMB; i++) {
-		// printf("%2x: %9d bits: %u, %2x\n", huffman_tree[i].leaf.value, huffman_tree[i].weight, regs[i].bits, regs[i].value);
+		printf("%2x: %9d bits: %2u, %2x map: %8x\n", huffman_tree[i].leaf.value, huffman_tree[i].weight, regs[i].bits, regs[i].value, regs[i].map);
 		assert(huffman_tree[i].leaf.value == regs[i].value || regs[i].bits == 0);
 	}
 
@@ -194,11 +195,53 @@ void *dhe_encode(const void *_data, size_t *len)
 		projected_len += regs[data[i]].bits;
 	}
 	printf("Projected Len: %zu: in bits %zu\n", projected_len / 8, projected_len);
+
+	assert(sizeof(union serialized_form) == 4);
+
+	size_t compressed_len = sizeof(struct DheHeader)
+		+ NB_SYMB * 2 * sizeof(union serialized_form)
+		+ ((projected_len & 0xf) != 0 ? (projected_len >> 3) + 1 : projected_len >> 3);
+
+#ifndef _42_
+	u8 *out = (u8 *)calloc(1, compressed_len);
+#else
+	u8 *out = (u8 *)malloc(compressed_len);
+#endif
+	if (out == NULL) {
+		dprintf(STDERR_FILENO, "Allocation error\n");
+		return NULL;
+	}
+#ifdef _42_
+	ft_bzero(out, header->compressed_len);
+#endif
+	// Fill DHE header
+	struct DheHeader *header = (struct DheHeader *)out;
+	memcpy(&header->magic[0], DHE_MAGIC, sizeof(DHE_MAGIC) - 1);
+	header->uncompressed_len = *len;
+	header->huffman_tree_root_idx = root_idx;
+
+	serialize_huffman_tree(out + sizeof(struct DheHeader), huffman_tree);
 	free(huffman_tree);
 
-
-	void *s = malloc(*len);
-	return (void *)s;
+	// Put a pointer at the begin of data_array
+	u8 *out_data = out + sizeof(struct DheHeader) + NB_SYMB * 2 * sizeof(union serialized_form);
+	u32 bit_offset = 0;
+	for (size_t i = 0; i < *len; i++) {
+		u32 map = regs[data[i]].map;
+		u32 bits = regs[data[i]].bits;
+		for (u32 j = 0; j < bits; j++) {
+			*out_data |= (map & 0x1) << bit_offset;
+			map >>= 1;
+			if (bit_offset == 7) {
+				bit_offset = 0;
+				out_data += 1;
+			} else {
+				bit_offset += 1;
+			}
+		}
+	}
+	*len = compressed_len;
+	return (void *)out;
 }
 
 void *dhe_decode(const void *data, size_t *len)
@@ -240,6 +283,9 @@ static void regs_replacement(struct regs regs[NB_SYMB])
 				u32 tmp_bits = regs[j].bits;
 				regs[j].bits = regs[i].bits;
 				regs[i].bits = tmp_bits;
+				u32 tmp_map = regs[j].map;
+				regs[j].map = regs[i].map;
+				regs[i].map = tmp_map;
 				break;
 			}
 		}
@@ -254,15 +300,16 @@ static void serialize_huffman_tree(u8 *stream, struct btree *huffman_tree)
 	}
 }
 
-static void recursive_search(struct btree *huffman_tree, u16 root_idx, u32 deep, struct regs regs[NB_SYMB])
+static void recursive_search(struct btree *huffman_tree, u16 root_idx, u32 deep, u32 map, struct regs regs[NB_SYMB])
 {
 	if (huffman_tree[root_idx].type == LEAF) {
 		assert(root_idx < NB_SYMB);
 		regs[root_idx].value = huffman_tree[root_idx].leaf.value;
 		regs[root_idx].bits = deep;
+		regs[root_idx].map = map;
 		return;
 	} else {
-		recursive_search(huffman_tree, huffman_tree[root_idx].node.index_left, deep + 1, regs);
-		recursive_search(huffman_tree, huffman_tree[root_idx].node.index_right, deep + 1, regs);
+		recursive_search(huffman_tree, huffman_tree[root_idx].node.index_left, deep + 1, map, regs);
+		recursive_search(huffman_tree, huffman_tree[root_idx].node.index_right, deep + 1, map | (1 << deep), regs);
 	}
 }
