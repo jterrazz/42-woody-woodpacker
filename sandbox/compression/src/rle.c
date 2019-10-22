@@ -1,5 +1,6 @@
 /*
  * Run Length Encoding (RLE)
+ * https://fr.wikipedia.org/wiki/Run-length_encoding
  */
 #include "rle.h"
 
