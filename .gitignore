@@ -23,6 +23,7 @@ program/test/*
 
 # tmp files
 *~
+!.editor_config
 
 # expect self
 !.gitignore
