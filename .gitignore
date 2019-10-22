@@ -7,6 +7,8 @@ CMakeLists.txt
 .build/
 *.gch
 *.o
+program/test/*
+!program/test/simple.c
 
 # Binaries
 *.a.out
@@ -27,5 +29,4 @@ CMakeLists.txt
 
 # main executable
 woody_woodpacker
-test
 woody

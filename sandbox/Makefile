@@ -1,4 +1,4 @@
-NAME = test
+NAME = sandbox
 CC = gcc
 AS = nasm
 

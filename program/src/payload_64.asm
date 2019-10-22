@@ -6,6 +6,7 @@ _payload64:
 ;    mov edi, 0     ; first argument
 ;    syscall
 ;    pushfq
+    pushf
 	push rax
 	push rdx
 	push rsi
@@ -36,6 +37,7 @@ _payload64:
 	pop rsi
 	pop rdx
 	pop rax
+	popf
 
 	jmp $
 ;	jmp [rel .encrypt] ; Replace by the start of the encrypted data
