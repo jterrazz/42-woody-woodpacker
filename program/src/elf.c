@@ -89,41 +89,43 @@ struct e_ident *parse_ident_field(u8 *data, size_t len)
 		break;
 	}
 
+	char *str;
 	switch (e_ident->os_abi) {
 	case ELFOSABI_SYSV:
-		ft_printf("UNIX System V ABI.\n");
+		str = "UNIX System V ABI.";
 		break;
 	case ELFOSABI_HPUX:
-		ft_printf("HP-UX ABI.\n");
+		str = "HP-UX ABI.";
 		break;
 	case ELFOSABI_NETBSD:
-		ft_printf("NetBSD ABI.\n");
+		str = "NetBSD ABI.";
 		break;
 	case ELFOSABI_LINUX:
-		ft_printf("Linux ABI.\n");
+		str = "Linux ABI.";
 		break;
 	case ELFOSABI_SOLARIS:
-		ft_printf("Solaris ABI.\n");
+		str = "Solaris ABI.";
 		break;
 	case ELFOSABI_IRIX:
-		ft_printf("IRIX ABI.\n");
+		str = "IRIX ABI.";
 		break;
 	case ELFOSABI_FREEBSD:
-		ft_printf("FreeBSD ABI.\n");
+		str = "FreeBSD ABI.";
 		break;
 	case ELFOSABI_TRU64:
-		ft_printf("TRU64 UNIX ABI.\n");
+		str = "TRU64 UNIX ABI.";
 		break;
 	case ELFOSABI_ARM:
-		ft_printf("ARM architecture ABI.\n");
+		str = "ARM architecture ABI.";
 		break;
 	case ELFOSABI_STANDALONE:
-		ft_printf("Stand-alone (embedded) ABI.\n");
+		str = "Stand-alone (embedded) ABI.";
 		break;
 	default:
 		ft_dprintf(STDERR_FILENO, "Unknown OS ABI.\n");
 		return NULL;
 	}
+	ft_printf("%s\n", str);
 
 	ft_printf("Private ABI version is %hhu.\n", e_ident->version_abi);
 	return e_ident;
