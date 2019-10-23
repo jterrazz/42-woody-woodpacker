@@ -149,7 +149,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	// IMPORTANT: C'est vraiment ici bordel ici mais je pense qu'il faut donner la Virt Addr et PAS l'offset dans le fichier
 	// Et ce serait vraiment important de faire la distinction entre les offsets du fichier et les offsets memoires dans
 	// les noms que l'on donne a nos variables, car ca m'embrouille grave pour comprendre le code.
-	output_header->e_entry = new_startpoint_offset;
+	output_header->e_entry = last_load_phdr->p_memsz + last_load_phdr->p_vaddr;
 	output_header->e_shnum += 1;
 	output_header->e_shstrndx += 1;
 
