@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head><title>Run Length Encoding by Arturo Campos</title><meta http-equiv="Content-Type" content="text/html;charset=utf-8"/><link rel="canonical" href="http://archive.today/60IO5"/></head><body style="margin:0;background-color:white;width:1024px"><div class="html1" style="width: 1024px;text-align: left;overflow-x: auto;overflow-y: auto; background-color: rgb(35, 66, 80);position: relative;min-height: 2293px;; z-index: 0"><div class="html" style="text-align:left;overflow-x:visible;overflow-y:visible;">
+
+
+<meta name="KeyWords" content="rle, run, length, encoding, compression,lossless, bwt, arturo, campos, vault, compression"/>
+<meta name="Description" content="A basic compression scheme"/>
+
+
+
+<div class="body" style="vertical-align:bottom;min-height:2269px;color:rgb(204, 255, 255);text-align:left;overflow-x:visible;overflow-y:visible;margin: 8px; ">
+<center><font size="+2">"Run Length Encoding"</font>
+<br/><font size="+1">by</font>
+<br/><font size="+2">Arturo San Emeterio Campos</font></center>
+<p style="text-align:left;"><br style="text-align:left;"/>
+<br style="text-align:left;"/>
+<br style="text-align:left;"/>
+<br style="text-align:left;"/>
+</p><p style="text-align:left;"><b style="text-align:left;"><font size="+1" style="text-align:left;">Disclaimer</font></b>
+<br style="text-align:left;"/>Copyright (c) Arturo San Emeterio Campos 1999. All rights reserved. Permission is granted to make verbatim copies of this document for private use only.
+<br style="text-align:left;"/> 
+</p><p style="text-align:left;"><b style="text-align:left;"><font size="+1" style="text-align:left;">Download</font></b>
+<br style="text-align:left;"/>Download the
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle_html.zip" style="color:rgb(255, 255, 255);text-align:left;">whole article</a>
+zipped. <br style="text-align:left;"/> 
+</p><p style="text-align:left;"><b style="text-align:left;"><font size="+1" style="text-align:left;">Table of contents</font></b>
+</p><ul style="display:inline-block;padding:0;margin:0"><li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Introduction" style="color:rgb(255, 255, 255);text-align:left;">Introduction</a></li>
+<li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Introduction" style="color:rgb(255, 255, 255);text-align:left;">Rle</a></li>
+<li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Encoder%20implementation" style="color:rgb(255, 255, 255);text-align:left;">Encoder</a></li>
+<li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Decoder" style="color:rgb(255, 255, 255);text-align:left;">Decoder</a></li>
+<li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Example" style="color:rgb(255, 255, 255);text-align:left;">Example</a></li>
+<li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Closing%20words" style="color:rgb(255, 255, 255);text-align:left;">Closing words</a></li>
+<li style="text-align:left;">
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_rle.html%23Contacting%20the%20author" style="color:rgb(255, 255, 255);text-align:left;">Contacting the author</a></li>
+</ul><br style="text-align:left;"/> 
+<p style="text-align:left;"> 
+<br style="text-align:left;"/> 
+<br style="text-align:left;"/> 
+<br style="text-align:left;"/> 
+</p><p style="text-align:left;"><a name="Introduction" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Introduction</font></b>
+<br style="text-align:left;"/>This article will discuss about how to implement a very simple compression algorithm rle. Due to the fact that it's very easy to see, it can be a good introduction to programmers interested in data compression. Rle is mainly used to compress runs of the same byte. However rle can also be good for the first stage of our bwt compressor, because we'll avoid too much time sorting strings that are equal due to the fact that there's a lot of runs with the same bytes in the data.
+<br style="text-align:left;"/> 
+</p><p style="text-align:left;"><a name="Rle" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Rle</font></b>
+<br style="text-align:left;"/>The rle algorithm maybe adapted to suit your needs, but the main idea is to replace runs of the same data (like 'aaaaa' or '00000') with a counter saying how many repetitions we have. The idea is quite simple, if we have 'aaaa' we just output 'a', and then a byte, 3 meaning that there was 3 bytes more of the same kind. The first scheme we have seen had a big problem, 'aaaa' will of course be compressed ok, but what about 'bc'? it will be compressed as b,0,c,0 and this is not a good idea, because it will expand the data instead of compressing it, we have to be more precise. What about something like that: if we found
+<i style="text-align:left;">two</i>
+bytes repeated then we output the number of times we have the same byte again. Example: 'aaaa' will be encoded as 'aa',2 and 'bc' will be encoded as 'bc'. This scheme is good enough for our needs. We also could make our scheme try to put a byte with the number of equal bytes after three or more equal bytes. </p><p style="text-align:left;"><a name="Encoder implementation" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Encoder</font></b>
+<br style="text-align:left;"/>As you've saw the implementation is very easy, you get two bytes, if they are equal output both of them, and then count how many bytes equal to the first you have, then output this value, and continue encoding, of course you have to discard the repeated bytes. Note that the value can't be greater than 255, we are using a byte to represent it. If the bytes were not equal, then output the first, make the second the first, and get the next byte as a second, and start again.
+</p><ul style="text-align:left;">
+<li style="text-align:left;">
+Get two bytes</li>
+<li style="text-align:left;">
+Loop</li>
+<li style="text-align:left;">
+Are they equal?</li>
+<li style="text-align:left;">
+Yes</li>
+<ul style="text-align:left;">
+<li style="text-align:left;">
+Output both of them</li>
+<li style="text-align:left;">
+Count how many bytes repeated we have</li>
+<li style="text-align:left;">
+Output that value</li>
+<li style="text-align:left;">
+Update pointer to the input file</li>
+<li style="text-align:left;">
+Get next two bytes.</li>
+<li style="text-align:left;">
+Repeat.</li>
+</ul>
+<li style="text-align:left;">
+No</li>
+<ul style="text-align:left;">
+<li style="text-align:left;">
+Output the first byte</li>
+<li style="text-align:left;">
+ -put the second, as first</li>
+<li style="text-align:left;">
+ -get a byte for the second one</li>
+<li style="text-align:left;">
+ -update pointer to input file</li>
+<li style="text-align:left;">
+ -repeat.</li>
+</ul>
+</ul>
+Ok? Well, now go and implement it. of course both the encoder and the decoder end when have read all the bytes, I suggest you keeping a variable, or a register with the total length, or something like that. <br style="text-align:left;"/> 
+<p style="text-align:left;"><a name="Decoder" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Decoder</font></b>
+<br style="text-align:left;"/>The decoder is easier than the encoder, remember: a decoder almost always is easier than an encoder. As before, pseudo code, just rewrite it in your favourite language.
+<br style="text-align:left;"/> 
+</p><ul style="text-align:left;">
+<li style="text-align:left;">
+Get one byte, put it to the output file, and now it's the 'last' byte.</li>
+<li style="text-align:left;">
+Loop</li>
+<li style="text-align:left;">
+Get one byte</li>
+<li style="text-align:left;">
+Is the current byte equal to last?</li>
+<li style="text-align:left;">
+Yes</li>
+<ul style="text-align:left;">
+<li style="text-align:left;">
+Now get another byte, this is 'counter'</li>
+<li style="text-align:left;">
+Put current byte in the output file</li>
+<li style="text-align:left;">
+Copy 'counter' times the 'last' byte to the output file</li>
+<li style="text-align:left;">
+Put last copied byte in 'last' (or leave it alone)</li>
+<li style="text-align:left;">
+Repeat.</li>
+</ul>
+<li style="text-align:left;">
+No</li>
+<ul style="text-align:left;">
+<li style="text-align:left;">
+Put current byte to the output file</li>
+<li style="text-align:left;">
+Now 'last' is the current byte</li>
+<li style="text-align:left;">
+Repeat.</li>
+</ul>
+</ul>
+Here it is, if you implement it, you have a Rle with byte based output. <br style="text-align:left;"/> 
+<p style="text-align:left;"><a name="Example" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Example</font></b>
+<br style="text-align:left;"/>A little example, we have the file: "aaaaaabcddccc" The encoder should output that:  a,a,4,b,c,d,d,0,c,c,1 And the decoder will be able to decompress it.
+</p><p style="text-align:left;"><a name="Closing words" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Closing words</font></b>
+<br style="text-align:left;"/>If you find any mistake in this article or want something to improve
+<a href="mailto:arturo@arturocampos.com" style="color:rgb(255, 255, 255);text-align:left;">email me</a>. Coz you're reading an article about rle I suppose that you are a beginner, in this case I recommend you to learn
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_lz77.html" style="color:rgb(255, 255, 255);text-align:left;">lz77</a>
+or <a href="http://archive.today/o/60IO5/www.arturocampos.com/ac_lzp.html" style="color:rgb(255, 255, 255);text-align:left;">lzp</a>. Good luck.  If you find any mistake in this article, email me.
+<br style="text-align:left;"/> 
+</p><p style="text-align:left;"><a name="Contacting the author" style="color:rgb(204, 255, 255);text-align:left;"></a><b style="text-align:left;"><font size="+1" style="text-align:left;">Contacting the author</font></b>
+<br style="text-align:left;"/>You can reach me via email at:
+<a href="mailto:arturo@arturocampos.com" style="color:rgb(255, 255, 255);text-align:left;">arturo@arturocampos.com</a>  Also don't forget to visit my home page
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/" style="color:rgb(255, 255, 255);text-align:left;">http://www.arturocampos.com</a>
+where you can find more and better info. See you in the next article! <br style="text-align:left;"/> 
+<br style="text-align:left;"/> 
+</p><div align="right">Arturo San Emeterio Campos, Barcelona 24-Jul-1999</div>
+<hr width="100%" style="text-align:left;"/>
+<br style="text-align:left;"/><p align="JUSTIFY">This article comes from Arturo Campos home page at
+<a href="http://archive.today/o/60IO5/www.arturocampos.com/" style="color:rgb(255, 255, 255);">http://www.arturocampos.com</a>
+Visit again soon for new and updated compression articles and software. </p></div></div></div></body></html>

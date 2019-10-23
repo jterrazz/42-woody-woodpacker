@@ -19,6 +19,9 @@ CMakeLists.txt
 # hidden files
 .*
 
+# tmp files
+*~
+
 # expect self
 !.gitignore
 
