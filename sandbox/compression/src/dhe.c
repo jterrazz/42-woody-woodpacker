@@ -65,7 +65,6 @@ struct btree {
 };
 
 struct regs {
-	u32 value;
 	u32 bits;
 	u32 map;
 };
@@ -80,19 +79,24 @@ struct regs {
 static u16 serialize_huffman_tree(struct node *stream,
 				  struct btree *huffman_tree);
 
+/*
+ * Find recursively the bitlen and the bitcode of each symbol
+ * to perform a compression
+ */
 static void recursive_search(struct btree *huffman_tree,
 			     u16 root_idx,
 			     u32 deep,
 			     u32 map,
 			     struct regs regs[NB_SYMB]);
 
+/*
+ * Sort symbols. [0..NB_SYMB] [0, 0, 0, ..., 'c', 'z', {...}, 0xff]
+ */
 static void leaves_bubble_sort(struct btree *huffman_tree);
-
-static void regs_replacement(struct regs regs[NB_SYMB]);
 
 void *dhe_encode(const void *_data, size_t *len)
 {
-	assert(_data != NULL && len != NULL && *len <= UINT32_MAX);
+	assert(_data != NULL && len != NULL && *len <= UINT32_MAX && *len != 0);
 
 	u8 *data = (u8 *)_data;
 
@@ -132,8 +136,14 @@ void *dhe_encode(const void *_data, size_t *len)
 	// Set the node index
 	u16 node_idx = 0;
 
-	// WARNING: Exeption if *len == 0 OR just one leaf
-	u16 nb_nodes = NB_SYMB - leaf_idx - 1;
+	u16 nb_nodes;
+	if (leaf_idx != 255) {
+		nb_nodes = NB_SYMB - leaf_idx - 1;
+	} else {
+		// For files with only a single byte value like 'GGGGGGG'
+		nb_nodes = 1;
+	}
+	// nb_nodes = NB_SYMB - leaf_idx - 1;
 	u16 available_node_idx = NB_SYMB;
 	while (true) {
 
@@ -157,8 +167,13 @@ void *dhe_encode(const void *_data, size_t *len)
 
 		u16 min_index_b;
 		if (node_idx == 0) {
-			min_index_b = leaf_idx;
-			leaf_idx += 1;
+			if (leaf_idx != NB_SYMB) {
+				min_index_b = leaf_idx;
+				leaf_idx += 1;
+			} else {
+				// For files with only a single byte value like 'GGGGGGG'
+				min_index_b = 0;
+			}
 		} else if (leaf_idx != NB_SYMB
 			   && (huffman_tree[leaf_idx].weight <= huffman_tree[node_idx].weight
 			       || node_idx >= available_node_idx)) {
@@ -201,24 +216,18 @@ void *dhe_encode(const void *_data, size_t *len)
 	struct regs regs[NB_SYMB] = {0};
 	recursive_search(huffman_tree, root_idx, 0, 0, regs);
 
-	for (u32 i = 0; i < NB_SYMB; i++) {
 #ifdef TRACE
-		printf("%2x: %9d bits: %2u, %2x map: %8x\n",
+	for (u32 i = 0; i < NB_SYMB; i++) {
+		printf("value: %2x weight: %2d bits: %2u  map: %8x\n",
 		       huffman_tree[i].leaf.value,
 		       huffman_tree[i].weight,
-		       regs[i].bits,
-		       regs[i].value,
-		       regs[i].map);
-#endif
-		// Coherency check
-		assert(huffman_tree[i].leaf.value == regs[i].value || regs[i].bits == 0);
+		       regs[huffman_tree[i].leaf.value].bits,
+		       regs[huffman_tree[i].leaf.value].map);
 	}
-
-	regs_replacement(regs);
-
+#endif
 	size_t projected_len = 0;
 	for (size_t i = 0; i < *len; i++) {
-		// Coherency check
+		// Coherency check (if value exists un regs)
 		assert(regs[data[i]].bits != 0);
 		projected_len += regs[data[i]].bits;
 	}
@@ -247,7 +256,8 @@ void *dhe_encode(const void *_data, size_t *len)
 	header->uncompressed_len = *len;
 	header->huffman_tree_root_idx = root_idx;
 
-	header->data_offset = sizeof(struct DheHeader) + serialize_huffman_tree((struct node *)(out + sizeof(struct DheHeader)), huffman_tree) * sizeof(struct node);
+	header->data_offset = sizeof(struct DheHeader)
+		+ serialize_huffman_tree((struct node *)(out + sizeof(struct DheHeader)), huffman_tree) * sizeof(struct node);
 	free(huffman_tree);
 
 	// Put a pointer at the begin of data_array
@@ -300,7 +310,8 @@ void *dhe_decode(const void *_data, size_t *len)
 
 	const u16 root_idx = header->huffman_tree_root_idx;
 	// Put a pointer at the begin of the huffman table
-	const struct node *huffman_tree = (struct node *)(data + sizeof(struct DheHeader));
+	const struct node *huffman_tree =
+		(struct node *)(data + sizeof(struct DheHeader));
 	// Put a pointer at the begin of compressed data
 	const u8 *map = data + header->data_offset;
 
@@ -351,28 +362,6 @@ static void leaves_bubble_sort(struct btree *huffman_tree)
 	} while (is_done == false);
 }
 
-static void regs_replacement(struct regs regs[NB_SYMB])
-{
-	inline void u32_swap(u32 *a, u32 *b)
-	{
-		u32 tmp = *a;
-		*a = *b;
-		*b = tmp;
-	}
-	for (size_t i = 0; i < NB_SYMB; i++) {
-		for (size_t j = 0; j < NB_SYMB; j++) {
-			if (i != j
-			    && regs[j].value == i
-			    && regs[j].bits != 0) {
-				u32_swap(&regs[i].value, &regs[j].value);
-				u32_swap(&regs[i].bits, &regs[j].bits);
-				u32_swap(&regs[i].map, &regs[j].map);
-				break;
-			}
-		}
-	}
-}
-
 static u16 serialize_huffman_tree(struct node *stream,
 				  struct btree *huffman_tree)
 {
@@ -410,12 +399,16 @@ static void recursive_search(struct btree *huffman_tree,
 {
 	if (huffman_tree[root_idx].type == LEAF) {
 
-		// Coherency check
+		// Coherency check (if leaves are in interval [0..NB_SYMB])
 		assert(root_idx < NB_SYMB);
 
-		regs[root_idx].value = huffman_tree[root_idx].leaf.value;
-		regs[root_idx].bits = deep;
-		regs[root_idx].map = map;
+		u32 value = huffman_tree[root_idx].leaf.value;
+
+		// Coherency check (if regs[v] was never filled before)
+		assert(regs[value].bits == 0);
+
+		regs[value].bits = deep;
+		regs[value].map = map;
 		return;
 	} else {
 		recursive_search(huffman_tree,
