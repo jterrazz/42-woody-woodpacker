@@ -2,10 +2,6 @@
 segment .text
 global _payload64
 _payload64:
-;    mov eax, 60     ; x86_64 opcode for sys_exit
-;    mov edi, 0     ; first argument
-;    syscall
-;    pushfq
     pushf
 	push rax
 	push rdx
@@ -39,8 +35,9 @@ _payload64:
 	pop rax
 	popf
 
-	jmp $
-;	jmp [rel .encrypt] ; Replace by the start of the encrypted data
+	jmp [rel _old_start_point]
+global _old_start_point
+_old_start_point: dq 0x530
 .encrypted_data_start: dq 0
 .encrypted_data_len: dq 0
 .start_encode: dq 0

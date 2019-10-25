@@ -5,6 +5,23 @@
 
 extern u8 _payload64;
 extern u64 _payload64_size;
+extern u64 _old_start_point;
+
+#ifdef _64BITS //tmp
+int set_payload64(void *payload, size_t payload_size, u64 jump_addr, u64 encrypted_data_start, size_t encrypted_data_len, u64 encryption_key)
+{
+	u64 *payload_end = payload + payload_size;
+
+	if (payload_size < 3 * 8)
+		return 1;
+
+	*(payload_end - 3) = encrypted_data_start;
+	*(payload_end - 2) = encrypted_data_len;
+	*(payload_end - 1) = encryption_key;
+
+	return 0;
+}
+#endif
 
 int dump_program_header_generic(void *bin_start, size_t bin_len)
 {
@@ -132,9 +149,16 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 		return -1;
 
 	ft_bzero(bss_section, last_load_bss_size);
+
+//	ft_printf("YOOO %lld, %p", _old_start_point, &_old_start_point);
+//	*((u64 *)&_old_start_point) = 0;
+
 	ft_printf("Will copy the payload of %llx bytes at offset %llx\n", _payload64_size, new_startpoint_offset);
 	if (swrite(output, &_payload64, new_startpoint_offset, _payload64_size))
 		return -1;
+	void *payload = sread(output, new_startpoint_offset, _payload64_size); // TODO secure
+	set_payload64(payload, _payload64_size, header->e_entry, 42, 42, 42);
+
 
 	/*
 	 * Modify the ELF header
