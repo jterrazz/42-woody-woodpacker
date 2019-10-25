@@ -110,7 +110,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
 	#define OUTPUT_FILENAME "./woody"
 
-	u64 output_len = bin_len + shift_size + sizeof(ElfN_Shdr); // Maybe do ElfN_Shdr in an other place
+	u64 output_len = bin_len + shift_size + sizeof(ElfN_Shdr) + sizeof(ElfN_Phdr); // Remove ElfN_Phdr if no new program header
 
 	STREAM *output = sopen(OUTPUT_FILENAME, output_len);
 	if (!output) {
@@ -228,7 +228,41 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	new_sh->sh_addralign = 16;
 	new_sh->sh_entsize = 0;
 
-	// TODO 0000000000202078  00002078
+
+	/*
+	 * Add a new program header test
+	 */
+
+//	u64 last_load_hdr_off = (void *)last_load_phdr - bin_start;
+//
+//	ft_printf("Output header: Offset program header %lld last program header %lld\n", output_header->e_phoff, last_load_hdr_off);
+//
+//	u64 first_part =  last_load_hdr_off + sizeof(ElfN_Phdr);
+//	u64 second_part = output_len - first_part - sizeof(ElfN_Phdr);
+//
+//	ft_printf("OUTPUT: size %lld, first part %lld, second part %lld\n", output_len, first_part, second_part);
+//	if (swrite(output, (void *) output_header + first_part, sizeof(ElfN_Phdr) + first_part, second_part))
+//		return -1;
+//
+//	output_header->e_phnum += 1;
+//	output_header->e_shoff += sizeof(ElfN_Phdr);
+//	output_header->e_entry += sizeof(ElfN_Phdr);
+//	ElfN_Phdr *new_phdr = (void *) output_header + first_part;
+////	new_phdr->p_offset = 42;
+//
+//	ElfN_Phdr *output_phdr = (void *) output_header + output_header->e_phoff;
+//	ft_printf("Will change the offset of programm headers: offset %lld nb %lld\n", output_header->e_phoff, output_header->e_phnum);
+//	for (u16 i = 0; i < output_header->e_phnum ; i++) {
+//		if (output_phdr->p_offset > output_header->e_phoff + output_header->e_phentsize * output_header->e_phnum) {
+//			output_phdr->p_offset += sizeof(ElfN_Phdr);
+//			output_phdr->p_vaddr += sizeof(ElfN_Phdr);
+//			output_phdr->p_paddr += sizeof(ElfN_Phdr);
+//		}
+//
+//		output_phdr++;
+//	}
+
+	ft_printf("Closed\n");
 //	((void(*)(void))&_payload64)();
 	sclose(output); // check ret
 	return 0;
