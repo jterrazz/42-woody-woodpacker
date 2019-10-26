@@ -109,13 +109,13 @@ struct e_ident *parse_ident(STREAM *file)
 }
 
 // TODO Generic
-size_t get_output_len(STREAM *file)
+static size_t get_output_len(STREAM *file, size_t payload_size)
 {
 	Elf64_Phdr *phdr = get_last_load_phdr_64(file); // TODO Secure
 
-	size_t aligned_payload64_size = (_payload64_size + 63) & ~63;
+	size_t aligned_payload64_len = (payload_size + 63) & ~63;
 	size_t last_load_bss_size = phdr->p_memsz - phdr->p_filesz;
-	size_t shift_size = aligned_payload64_size + last_load_bss_size;
+	size_t shift_size = aligned_payload64_len + last_load_bss_size;
 	size_t len = sfile_len(file);
 
 	return len + shift_size + sizeof(Elf64_Shdr);
@@ -153,44 +153,51 @@ int config_packer_for_last_load(STREAM *file, PACKER_CONFIG *packed_file)
 	return 0;
 }
 
-int read_elf(STREAM *file)
+int start_packer(STREAM *file, u8 class)
 {
 	PACKER_CONFIG config;
 	STREAM *output;
 	size_t output_len;
-	struct e_ident *ident_field;
 
-	if (!(ident_field = parse_ident(file)))
-	    return -1;
-
-	output_len = get_output_len(file);
+	output_len = get_output_len(file, class == ELFCLASS32 ? _payload64_size : _payload64_size);
 
 	if (config_packer_for_last_load(file, &config))
 		return -1;
 	if (!(output = sopen(OUTPUT_FILENAME, output_len, S_RDWR))) // TODO Will need to transform this to a simple mmap because compression will reduce size
 		return -1;
-
-	// TODO Secure calls
 	if (
 		insert_payload_64(output, file, &config)
 		|| add_hdr_entry_64(output, &config)
 		|| update_phdr_64(output, &config)
 		|| add_shdr_64(output, file, &config)
-	)
+		)
 		return -1;
 
 	void *payload = sread(output, config.new_startpoint_off, _payload64_size); // TODO secure
 	set_payload64(payload, &config);
-
 	sclose(output);
+	ft_printf("%s created 😱\n", OUTPUT_FILENAME);
+
+	return 0;
+}
+
+int read_elf(STREAM *file)
+{
+	struct e_ident *ident_field;
+
+	if (!(ident_field = parse_ident(file)))
+	    return -1;
 
 	if (ident_field->class == ELFCLASS32) {
+		if (start_packer(file, ELFCLASS32))
+			return -1;
 //		Elf32_Ehdr *header = parse_elf_header_32(data, len);
 //		dump_section_header_32(data, len);
 //        dump_program_header_32(data, len);
-//
 //        (void)header;
 	} else if (ident_field->class == ELFCLASS64) {
+		if (start_packer(file, ELFCLASS64))
+			return -1;
 //		Elf64_Ehdr *header = parse_elf_header_64(data, len);
 //		dump_section_header_64(data, len);
 //        dump_program_header_64(data, len);

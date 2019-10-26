@@ -5,6 +5,7 @@
 
 /*
  * TODO: Check file with no load phdr
+ * TODO: Test for 32 bits files
  */
 
 int main(int argc, char *argv[])
