@@ -7,8 +7,6 @@
 int main(int argc, char *argv[])
 {
 	STREAM *file;
-	size_t file_len;
-	void *file_start;
 
 	if (argc != 2) {
 		ft_dprintf(STDERR_FILENO, "usage: %s executable_file\n", argv[0]);

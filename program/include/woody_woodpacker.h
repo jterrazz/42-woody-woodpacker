@@ -32,17 +32,31 @@ size_t	sfile_len(STREAM *ctx);
  */
 #define OUTPUT_FILENAME "./woody"
 
+typedef struct packer_config {
+	size_t payload_len_aligned; // = (_payload64_size + 63) & ~63;
+	size_t bss_to_add; // = phdr->p_memsz - phdr->p_filesz;
+	size_t real_payload_len; // = aligned_payload64_size + last_load_bss_size;
+	size_t payload_file_off; // = phdr->p_offset + phdr->p_filesz;
+	size_t payload_mem_off; // = phdr->p_offset + phdr->p_filesz; // TODO Useful ?
+	size_t payload_to_end_len; //= ori_len - before_payload_size;
+	size_t new_startpoint_off; // = before_payload_size + last_load_bss_size;
+} PACKER_CONFIG;
+
 extern u8 _payload64;
 extern u64 _payload64_size;
 
 int read_elf(STREAM *file);
 
+int add_hdr_entry_64(STREAM *output, size_t entry);
+int add_hdr_entry_32(STREAM *output, size_t entry);
+int add_shdr_64(STREAM *output, STREAM *original);
+int add_shdr_32(STREAM *output, STREAM *original);
 Elf32_Ehdr *parse_elf_header_32(u8 *data, size_t len);
 Elf64_Ehdr *parse_elf_header_64(u8 *data, size_t len);
 Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
 Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
-int insert_payload_64(STREAM *output, STREAM *original);
-int insert_payload_32(STREAM *output, STREAM *original);
+int insert_payload_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
+int insert_payload_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int dump_section_header_32(u8 *data, size_t len);
 int dump_section_header_64(u8 *data, size_t len);
 int dump_program_header_32(u8 *data, size_t len);

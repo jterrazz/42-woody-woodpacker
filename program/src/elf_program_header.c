@@ -46,7 +46,7 @@ ElfN_Phdr *get_last_load_phdr_generic(STREAM *file)
 }
 
 // TODO Reactor to append in phdr
-int insert_payload_generic(STREAM *output, STREAM *original)
+int insert_payload_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 {
 	void *ori_start;
 
@@ -54,34 +54,26 @@ int insert_payload_generic(STREAM *output, STREAM *original)
 	size_t ori_len = sfile_len(original);
 	ori_start = sread(original, 0, ori_len);
 
-	size_t aligned_payload64_size = (_payload64_size + 63) & ~63;
-	size_t last_load_bss_size = phdr->p_memsz - phdr->p_filesz;
-	size_t shift_size = aligned_payload64_size + last_load_bss_size;
-	u64 before_payload_size = phdr->p_offset + phdr->p_filesz;
-	u64 after_payload_size = ori_len - before_payload_size;
-	u64 new_startpoint_offset = before_payload_size + last_load_bss_size;
-
-	if (swrite(output, ori_start , 0, before_payload_size)) // TODO Could do a smove feature
+	if (swrite(output, ori_start , 0, config->payload_file_off)) // TODO Could do a smove feature
+		return -1;
+	if (swrite(output, ori_start + config->payload_file_off, config->payload_file_off + config->real_payload_len, config->payload_to_end_len))
 		return -1;
 
-	if (swrite(output, ori_start + before_payload_size, before_payload_size + shift_size, after_payload_size))
-		return -1;
-
-	void *bss_section = sread(output, before_payload_size, last_load_bss_size + aligned_payload64_size);
+	void *bss_section = sread(output, config->payload_file_off, config->bss_to_add);
 	if (!bss_section)
 		return -1;
 
-	ft_bzero(bss_section, last_load_bss_size);
+	ft_bzero(bss_section, config->bss_to_add);
 
-	ft_printf("Will copy the payload of %llx bytes at offset %llx\n", _payload64_size, new_startpoint_offset);
-	if (swrite(output, &_payload64, new_startpoint_offset, _payload64_size))
+//	ft_printf("Will copy the payload of %llx bytes at offset %llx\n", _payload64_size, new_startpoint_offset);
+	if (swrite(output, &_payload64, config->new_startpoint_off, _payload64_size))
 		return -1;
 
 	ElfN_Ehdr *elf_hdr;
 	if (!(elf_hdr = sread(original, 0, sizeof(ElfN_Ehdr)))) // TODO Maybe use output for this
 		return NULL;
 
-	void *payload = sread(output, new_startpoint_offset, _payload64_size); // TODO secure
+	void *payload = sread(output, config->new_startpoint_off, _payload64_size); // TODO secure
 	u32 old_start_off = elf_hdr->e_entry - phdr->p_vaddr - phdr->p_memsz - _payload64_size + 24;  // (u32) -((u64)&_payload_end - old_start);
 	set_payload64(payload, _payload64_size, elf_hdr->e_entry, 42, 42, 42, old_start_off);
 
@@ -93,8 +85,8 @@ int insert_payload_generic(STREAM *output, STREAM *original)
 
 	output_last_load_header->p_flags |= PF_X;
 	ft_printf("Output last load header: OLD MEMSIZE: %lld, OLD FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
-	output_last_load_header->p_memsz += aligned_payload64_size;
-	output_last_load_header->p_filesz += shift_size;
+	output_last_load_header->p_memsz += config->payload_len_aligned;
+	output_last_load_header->p_filesz += config->real_payload_len;
 	ft_printf("Output last load header: NEW MEMSIZE: %lld, NEW FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
 
 }
