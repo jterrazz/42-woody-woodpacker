@@ -79,6 +79,7 @@ $(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makef
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D ElfN_Ehdr=Elf64_Ehdr \
 	-D dump_section_header_generic=dump_section_header_64 \
+	-D add_shdr_generic=add_shdr_64 \
 	-D ElfN_Addr=Elf64_Addr \
 	-D ElfN_Off=Elf64_Off \
 	-D ElfN_Shdr=Elf64_Shdr \
@@ -99,7 +100,7 @@ $(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makef
 	-D get_last_load_phdr_generic=get_last_load_phdr_64 \
 	-D insert_payload_generic=insert_payload_64 \
 	-D add_hdr_entry_generic=add_hdr_entry_64 \
-	-D add_shdr_generic=add_shdr_64 \
+	-D update_phdr_generic=update_phdr_64 \
 	-D ElfN_Ehdr=Elf64_Ehdr \
 	-D ElfN_Off=Elf64_Off \
 	-D ElfN_Phdr=Elf64_Phdr \

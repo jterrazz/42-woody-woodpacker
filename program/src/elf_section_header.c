@@ -24,18 +24,66 @@ static struct section_header_type section_header_type[SECTION_HEADER_TYPE_N] = {
 	{ SHT_DYNSYM, "DYNSYM" },
 };
 
-// typedef struct {
-// 	uint32_t   sh_name;
-// 	uint32_t   sh_type;
-// 	uint32_t   sh_flags;
-// 	Elf32_Addr sh_addr;
-// 	Elf32_Off  sh_offset;
-// 	uint32_t   sh_size;
-// 	uint32_t   sh_link;
-// 	uint32_t   sh_info;
-// 	uint32_t   sh_addralign;
-// 	uint32_t   sh_entsize;
-// } Elf32_Shdr;
+int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
+{
+	ElfN_Ehdr *elf_hdr;
+	ElfN_Ehdr *output_header;
+
+	if (!(elf_hdr = sread(original, 0, sizeof(ElfN_Ehdr)))) // TODO Maybe use output for this
+		return NULL;
+	if (!(output_header = sread(output, 0, sizeof(ElfN_Ehdr)))) // TODO Rename
+		return NULL;
+
+	u64 sh_offset = elf_hdr->e_shoff;
+
+	if (sh_offset > config->payload_file_off) // TODO Use insted at returned in main
+		sh_offset += config->real_payload_len;
+	output_header->e_shoff = sh_offset;
+
+	ElfN_Shdr *output_sh = sread(output, sh_offset, sizeof(ElfN_Shdr) * output_header->e_shnum);
+	if (!output_sh)
+		return -1;
+
+	/*
+	 * Update old segments with their new offsets
+	 */
+
+	void *new_shdr_addr = 0;
+	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
+		if (output_sh->sh_offset > config->payload_file_off) {
+			if (!new_shdr_addr)
+				new_shdr_addr = output_sh;
+			output_sh->sh_offset += config->real_payload_len;
+		}
+		output_sh++;
+	}
+
+	/*
+	 * Add and setup a new segment
+	 */
+
+	new_shdr_addr -= sizeof(ElfN_Shdr); // TODO Only do that if the last segment was a BSS and had empty space
+	ElfN_Shdr *prev_sh = new_shdr_addr - sizeof(ElfN_Shdr) ;
+
+	((ElfN_Shdr *)new_shdr_addr)->sh_offset += config->real_payload_len;
+
+	u64 new_sh_offset = new_shdr_addr - (void *)output_header;
+	u64 end_output_to_move_size = sfile_len(output) - new_sh_offset - sizeof(ElfN_Shdr);
+	if (swrite(output, new_shdr_addr, new_sh_offset + sizeof(ElfN_Shdr), end_output_to_move_size))
+		return -1;
+
+	ElfN_Shdr *new_sh = new_shdr_addr;
+	new_sh->sh_name = 0;
+	new_sh->sh_type = SHT_PROGBITS;
+	new_sh->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
+	new_sh->sh_offset = config->new_startpoint;
+	new_sh->sh_addr = prev_sh->sh_addr + (config->new_startpoint - prev_sh->sh_offset);
+	new_sh->sh_size = config->payload_len_aligned;
+	new_sh->sh_link = 0;
+	new_sh->sh_info =  0;
+	new_sh->sh_addralign = 16;
+	new_sh->sh_entsize = 0;
+}
 
 int dump_section_header_generic(u8 *data, size_t len)
 {

@@ -122,20 +122,33 @@ size_t get_output_len(STREAM *file)
 	return len + shift_size + sizeof(Elf64_Shdr);
 }
 
+// TODO Generic
 int config_packer_for_last_load(STREAM *file, PACKER_CONFIG *packed_file)
 {
 	Elf64_Phdr *phdr;
+	Elf64_Ehdr *ehdr;
+	void *start;
 
+	if (!(ehdr = sread(file, 0, sizeof(Elf64_Ehdr))))
+		return -1;
 	if (!(phdr = get_last_load_phdr_64(file)))
 		return -1;
+	if (!(start = sread(file, 0, sfile_len(file))))
+		return -1;
 
+	// TODO Maybe do a generic function in s... that copy data giving the origin ptr, and comparing if data was moved in output
+	packed_file->phdr_selected_off = (void *)phdr - start;
 	packed_file->bss_to_add = phdr->p_memsz - phdr->p_filesz;
 	packed_file->payload_len_aligned = (_payload64_size + 63) & ~63;
 	packed_file->real_payload_len = packed_file->payload_len_aligned + packed_file->bss_to_add;
 	packed_file->payload_file_off = phdr->p_offset + phdr->p_filesz;
 	packed_file->payload_mem_off = phdr->p_offset + phdr->p_memsz;
 	packed_file->payload_to_end_len = sfile_len(file) - packed_file->payload_file_off; // TODO Maybe do mem/file too
-	packed_file->new_startpoint_off = packed_file->payload_file_off + packed_file->bss_to_add; // TODO Maybe do mem/file too
+	packed_file->new_startpoint = packed_file->payload_file_off + packed_file->bss_to_add; // TODO Maybe do mem/file too
+	packed_file->old_startpoint = ehdr->e_entry;
+
+	// TODO Probably better config this var
+	packed_file->relative_jmp_new_pg = packed_file->old_startpoint - phdr->p_vaddr - phdr->p_memsz - _payload64_size + 24;
 
 	return 0;
 }
@@ -145,23 +158,28 @@ int read_elf(STREAM *file)
 	PACKER_CONFIG config;
 	STREAM *output;
 	size_t output_len;
+	struct e_ident *ident_field;
 
-	struct e_ident *ident_field = parse_ident_field(file);
-	if (!ident_field)
+	if (!(ident_field = parse_ident_field(file)))
 	    return -1;
 
 	output_len = get_output_len(file);
 	if (config_packer_for_last_load(file, &config))
 		return -1;
-
 	if (!(output = sopen(OUTPUT_FILENAME, output_len, S_RDWR))) // TODO Will need to transform this to a simple mmap because compression will reduce size
 		return -1;
 
 	// TODO Secure calls
 	Elf64_Phdr *last_load_phdr = get_last_load_phdr_64(file);
 	insert_payload_64(output, file, &config); // TODO Maybe refactor for more generic (set an addr)
+	update_phdr_64(output, &config);
 	add_hdr_entry_64(output, last_load_phdr->p_memsz + last_load_phdr->p_vaddr);
-	add_shdr_64(output, file);
+	add_shdr_64(output, file, &config);
+
+	void *payload = sread(output, config.new_startpoint, _payload64_size); // TODO secure
+	set_payload64(payload, &config);
+
+
 	sclose(output);
 
 	if (ident_field->class == ELFCLASS32) {
