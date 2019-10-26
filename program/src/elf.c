@@ -131,36 +131,60 @@ struct e_ident *parse_ident_field(u8 *data, size_t len)
 	return e_ident;
 }
 
-Elf32_Ehdr *parse_elf_header_32(u8 *data, size_t len);
-Elf64_Ehdr *parse_elf_header_64(u8 *data, size_t len);
-
-int dump_section_header_32(u8 *data, size_t len);
-int dump_section_header_64(u8 *data, size_t len);
-int dump_program_header_32(u8 *data, size_t len);
-int dump_program_header_64(u8 *data, size_t len);
-
-int read_elf(u8 *data, size_t len)
+// Generic
+size_t get_output_len(STREAM *file)
 {
-	struct e_ident *ident_field = parse_ident_field(data, len);
-	if (!ident_field)
-	    return -1;
+	Elf64_Phdr *phdr = get_last_load_phdr_64(file);
 
-	if (ident_field->class == ELFCLASS32) {
-		Elf32_Ehdr *header = parse_elf_header_32(data, len);
-		dump_section_header_32(data, len);
-        dump_program_header_32(data, len);
+	size_t aligned_payload64_size = (_payload64_size + 63) & ~63;
+	size_t last_load_bss_size = phdr->p_memsz - phdr->p_filesz;
+	size_t shift_size = aligned_payload64_size + last_load_bss_size;
+	size_t len = sfile_len(file);
 
-        (void)header;
-	} else if (ident_field->class == ELFCLASS64) {
-		Elf64_Ehdr *header = parse_elf_header_64(data, len);
-		dump_section_header_64(data, len);
-        dump_program_header_64(data, len);
-        (void)header;
-	} else {
-		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");
+	return len + shift_size + sizeof(Elf64_Shdr);
+}
+
+int add_hdr_entry_64(STREAM *output, size_t entry);
+int add_hdr_entry_32(STREAM *output, size_t entry);
+int add_shdr_64(STREAM *output, STREAM *original);
+int add_shdr_32(STREAM *output, STREAM *original);
+
+int read_elf(STREAM *file)
+{
+	STREAM *output;
+	size_t output_len;
+
+//	struct e_ident *ident_field = parse_ident_field(data, len);
+//	if (!ident_field)
+//	    return -1;
+
+	output_len = get_output_len(file);
+
+	if (!(output = sopen(OUTPUT_FILENAME, output_len, S_RDWR))) // TODO Will need to transform this to a simple mmap because compression will reduce size
 		return -1;
-	}
 
-	(void)ident_field;
+	// TODO Secure calls
+	Elf64_Phdr *last_load_phdr = get_last_load_phdr_64(file);
+	insert_payload_64(output, file); // TODO Maybe refactor for more generic (set an addr)
+	add_hdr_entry_64(output, last_load_phdr->p_memsz + last_load_phdr->p_vaddr);
+	add_shdr_64(output, file);
+	sclose(output);
+
+//	if (ident_field->class == ELFCLASS32) {
+//		Elf32_Ehdr *header = parse_elf_header_32(data, len);
+//		dump_section_header_32(data, len);
+//        dump_program_header_32(data, len);
+//
+//        (void)header;
+//	} else if (ident_field->class == ELFCLASS64) {
+//		Elf64_Ehdr *header = parse_elf_header_64(data, len);
+//		dump_section_header_64(data, len);
+//        dump_program_header_64(data, len);
+//        (void)header;
+//	} else {
+//		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");
+//		return -1;
+//	}
+
 	return 0;
 }

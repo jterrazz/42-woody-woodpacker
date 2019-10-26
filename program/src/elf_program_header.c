@@ -23,116 +23,48 @@ int set_payload64(void *payload, size_t payload_size, u64 jump_addr, u64 encrypt
 }
 #endif
 
-int dump_program_header_generic(void *bin_start, size_t bin_len)
+ElfN_Phdr *get_last_load_phdr_generic(STREAM *file)
 {
-	ElfN_Ehdr *header = (ElfN_Ehdr *)secure_read(bin_start, bin_len, 0, sizeof(ElfN_Ehdr));
-	if (header == NULL) {
-		return -1;
-	}
-	ElfN_Off offset = header->e_phoff;
-
-	ft_printf("Offset: %p, %d entries of %d bytes\n",
-		  offset,
-		  header->e_phnum,
-		  header->e_phentsize);
-
-	ElfN_Phdr *phdr = (ElfN_Phdr *)secure_read(bin_start,
-						   bin_len,
-						   offset,
-						   header->e_phnum * header->e_phentsize);
-	if (phdr == NULL) {
-		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing program header table\n");
-		return -1;
-	}
-
-	ft_printf("Program Headers:\n");
-	ft_printf("%-20s%10s %10s %10s\n", "Type", "Offset", "Virt", "Phys");
-
+	ElfN_Ehdr *elf_hdr;
+	ElfN_Phdr *phdr;
 	ElfN_Phdr *last_load_phdr = NULL;
-	for (u16 i = 0; i < header->e_phnum ; i++) {
-		char *s;
-		switch (phdr->p_type) {
-		case PT_NULL:
-			s = "ULL";
-			break;
-		case PT_LOAD:
-			s = "LOAD";
+
+	if (!(elf_hdr = sread(file, 0, sizeof(ElfN_Ehdr))))
+		return NULL;
+
+	if (!(phdr = sread(file, elf_hdr->e_phoff, elf_hdr->e_phnum * elf_hdr->e_phentsize))) {
+		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing program header table\n");
+		return NULL;
+	}
+
+	for (u16 i = 0; i < elf_hdr->e_phnum ; i++) {
+		if (phdr->p_type == PT_LOAD)
 			last_load_phdr = phdr;
-			break;
-		case PT_DYNAMIC:
-			s = "DYNAMIC";
-			break;
-		case PT_INTERP:
-			s = "INTERP";
-			break;
-		case PT_NOTE:
-			s = "NOTE";
-			break;
-		case PT_SHLIB:
-			s = "SHLIB";
-			break;
-		case PT_PHDR:
-			s = "PHDR";
-			break;
-		case PT_GNU_RELRO:
-			s = "GNU_RELRO";
-			break;
-		case PT_GNU_EH_FRAME:
-			s = "GNU_EH_FRAME";
-			break;
-		case PT_LOPROC:
-		case PT_HIPROC:
-			s = "LOPROC, HIPROC";
-			break;
-		case PT_GNU_STACK:
-			s = "GNU_STACK";
-			break;
-		default:
-			s = "UNKNOWN";
-			break;
-		}
-		ft_printf("%-20s%10p %10p %10p\n", s, phdr->p_offset, phdr->p_vaddr, phdr->p_paddr);
 		phdr++;
 	}
+	return last_load_phdr;
+}
 
-	ft_printf("Last LOAD is at offset: %llx with a memsize of %llx bytes and filesize of %llx vytes\n", last_load_phdr->p_offset, last_load_phdr->p_memsz, last_load_phdr->p_filesz);
+// TODO Reactor to append in phdr
+int insert_payload_generic(STREAM *output, STREAM *original)
+{
+	void *ori_start;
 
-	/*
-	 * Start the creation of new exec
-	 */
+	Elf64_Phdr *phdr = get_last_load_phdr_64(original); // TODO Generic
+	size_t ori_len = sfile_len(original);
+	ori_start = sread(original, 0, ori_len);
 
-	u64 before_payload_size = last_load_phdr->p_offset + last_load_phdr->p_filesz;
-	u64 last_load_bss_size = last_load_phdr->p_memsz - last_load_phdr->p_filesz;
-	u64 after_payload_size = bin_len - before_payload_size;
+	size_t aligned_payload64_size = (_payload64_size + 63) & ~63;
+	size_t last_load_bss_size = phdr->p_memsz - phdr->p_filesz;
+	size_t shift_size = aligned_payload64_size + last_load_bss_size;
+	u64 before_payload_size = phdr->p_offset + phdr->p_filesz;
+	u64 after_payload_size = ori_len - before_payload_size;
 	u64 new_startpoint_offset = before_payload_size + last_load_bss_size;
-	u64 aligned_payload64_size = (_payload64_size + 63) & ~63;
-	u64 shift_size = aligned_payload64_size + last_load_bss_size;
 
-	ft_printf("Aligned payload: %llx from original %llx", aligned_payload64_size, _payload64_size);
-
-	ft_printf("Calculated BSS size to fill %llx (%llx - %llx)\n", last_load_bss_size, last_load_phdr->p_memsz, last_load_phdr->p_filesz);
-
-	/*
-	 * Creates the new executable
-	 */
-
-	#define OUTPUT_FILENAME "./woody"
-
-	u64 output_len = bin_len + shift_size + sizeof(ElfN_Shdr) + sizeof(ElfN_Phdr); // Remove ElfN_Phdr if no new program header
-
-	STREAM *output = sopen(OUTPUT_FILENAME, output_len, S_RDWR);
-	if (!output) {
-		return -1;
-	}
-
-	/*
-	 * Moves data to insert the payload
-	 */
-
-	if (swrite(output, bin_start , 0, before_payload_size))
+	if (swrite(output, ori_start , 0, before_payload_size)) // TODO Could do a smove feature
 		return -1;
 
-	if (swrite(output, bin_start + before_payload_size, before_payload_size + shift_size, after_payload_size))
+	if (swrite(output, ori_start + before_payload_size, before_payload_size + shift_size, after_payload_size))
 		return -1;
 
 	void *bss_section = sread(output, before_payload_size, last_load_bss_size + aligned_payload64_size);
@@ -141,43 +73,19 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
 	ft_bzero(bss_section, last_load_bss_size);
 
-//	ft_printf("YOOO %lld, %p", _old_start_point, &_old_start_point);
-//	*((u64 *)&_old_start_point) = 0;
-
 	ft_printf("Will copy the payload of %llx bytes at offset %llx\n", _payload64_size, new_startpoint_offset);
 	if (swrite(output, &_payload64, new_startpoint_offset, _payload64_size))
 		return -1;
+
+	ElfN_Ehdr *elf_hdr;
+	if (!(elf_hdr = sread(original, 0, sizeof(ElfN_Ehdr)))) // TODO Maybe use output for this
+		return NULL;
+
 	void *payload = sread(output, new_startpoint_offset, _payload64_size); // TODO secure
+	u32 old_start_off = elf_hdr->e_entry - phdr->p_vaddr - phdr->p_memsz - _payload64_size + 24;  // (u32) -((u64)&_payload_end - old_start);
+	set_payload64(payload, _payload64_size, elf_hdr->e_entry, 42, 42, 42, old_start_off);
 
-
-
-	/*
-	 * Modify the ELF header
-	 */
-
-	ElfN_Ehdr *output_header = (ElfN_Ehdr *)sread(output, 0, sizeof(ElfN_Ehdr));
-	if (output_header == NULL)
-		return -1;
-
-	u32 old_start_off = header->e_entry - last_load_phdr->p_vaddr - last_load_phdr->p_memsz - _payload64_size + 24;  // (u32) -((u64)&_payload_end - old_start);
-	set_payload64(payload, _payload64_size, header->e_entry, 42, 42, 42, old_start_off);
-
-	ft_printf("Will use relative offset of - %llx - %llx - %llx\n", last_load_phdr->p_vaddr, last_load_phdr->p_memsz, _payload64_size);
-	ft_printf("Will modify the original startpoint %llx to %llx\n", output_header->e_entry, new_startpoint_offset);
-
-	// IMPORTANT: C'est vraiment ici bordel ici mais je pense qu'il faut donner la Virt Addr et PAS l'offset dans le fichier
-	// Et ce serait vraiment important de faire la distinction entre les offsets du fichier et les offsets memoires dans
-	// les noms que l'on donne a nos variables, car ca m'embrouille grave pour comprendre le code.
-	output_header->e_entry = last_load_phdr->p_memsz + last_load_phdr->p_vaddr;
-	output_header->e_shnum += 1;
-	output_header->e_shstrndx += 1;
-
-	/*
-	 * Good to know. Programs like radare2 in visual mode only prints the instructions in dissaembly mode
-	 * if it's inside the program section (calculated using the start ptr + size)
-	 */
-
-	u64 last_load_header_offset = (void *)last_load_phdr - bin_start;
+	u64 last_load_header_offset = (void *)phdr - ori_start;
 
 	ElfN_Phdr *output_last_load_header = (ElfN_Phdr *)sread(output, last_load_header_offset, sizeof(ElfN_Phdr));
 	if (output_last_load_header == NULL)
@@ -189,12 +97,44 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	output_last_load_header->p_filesz += shift_size;
 	ft_printf("Output last load header: NEW MEMSIZE: %lld, NEW FILESIZE %lld\n", output_last_load_header->p_memsz, output_last_load_header->p_filesz);
 
-	/*
-	 * Modify the ELF section headers to reflect the new offset.
-	 */
+}
 
-	u64 sh_offset = header->e_shoff;
-	if (sh_offset > before_payload_size)
+// TODO Rename using offset and addr
+int add_hdr_entry_generic(STREAM *output, size_t entry)
+{
+	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
+	if (output_header == NULL)
+		return -1;
+
+	output_header->e_entry = entry;
+	output_header->e_shnum += 1;
+	output_header->e_shstrndx += 1;
+}
+
+int add_shdr_generic(STREAM *output, STREAM *original)
+{
+	ElfN_Ehdr *elf_hdr;
+	if (!(elf_hdr = sread(original, 0, sizeof(ElfN_Ehdr)))) // TODO Maybe use output for this
+		return NULL;
+
+	ElfN_Ehdr *output_header;
+	if (!(output_header = sread(output, 0, sizeof(ElfN_Ehdr)))) // TODO Rename
+		return NULL;
+
+	u64 sh_offset = elf_hdr->e_shoff;
+
+
+	Elf64_Phdr *phdr = get_last_load_phdr_64(original); // TODO Generic
+//	size_t ori_len = sfile_len(original);
+//	ori_start = sread(original, 0, ori_len);
+
+	size_t aligned_payload64_size = (_payload64_size + 63) & ~63;
+	size_t last_load_bss_size = phdr->p_memsz - phdr->p_filesz;
+	size_t shift_size = aligned_payload64_size + last_load_bss_size; // TODO Maybe use in global
+	u64 before_payload_size = phdr->p_offset + phdr->p_filesz;
+	u64 new_startpoint_offset = before_payload_size + last_load_bss_size;
+
+	if (sh_offset > before_payload_size) // TODO Use insted at returned in main
 		sh_offset += shift_size;
 	output_header->e_shoff = sh_offset;
 
@@ -208,7 +148,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	ft_printf("  %10s %10s %15s %10s\n", "sh_offset", "sh_addr", "sh_addralign", "was shifted");
 
 	void *new_sh_addr = 0;
-	for (u16 i = 0; i < header->e_shnum ; i++) {
+	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
 		u8 was_moved = 0;
 		if (output_sh->sh_offset > before_payload_size) {
 			if (!new_sh_addr) {
@@ -230,6 +170,8 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
 	((ElfN_Shdr *)new_sh_addr)->sh_offset += shift_size;
 
+	size_t output_len = sfile_len(output);
+
 	u64 new_sh_offset = new_sh_addr - (void *)output_header;
 	u64 end_output_to_move_size = output_len - new_sh_offset - sizeof(ElfN_Shdr);
 	if (swrite(output, new_sh_addr, new_sh_offset + sizeof(ElfN_Shdr), end_output_to_move_size))
@@ -246,43 +188,4 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	new_sh->sh_info =  0;
 	new_sh->sh_addralign = 16;
 	new_sh->sh_entsize = 0;
-
-
-	/*
-	 * Add a new program header test
-	 */
-
-//	u64 last_load_hdr_off = (void *)last_load_phdr - bin_start;
-//
-//	ft_printf("Output header: Offset program header %lld last program header %lld\n", output_header->e_phoff, last_load_hdr_off);
-//
-//	u64 first_part =  last_load_hdr_off + sizeof(ElfN_Phdr);
-//	u64 second_part = output_len - first_part - sizeof(ElfN_Phdr);
-//
-//	ft_printf("OUTPUT: size %lld, first part %lld, second part %lld\n", output_len, first_part, second_part);
-//	if (swrite(output, (void *) output_header + first_part, sizeof(ElfN_Phdr) + first_part, second_part))
-//		return -1;
-//
-//	output_header->e_phnum += 1;
-//	output_header->e_shoff += sizeof(ElfN_Phdr);
-//	output_header->e_entry += sizeof(ElfN_Phdr);
-//	ElfN_Phdr *new_phdr = (void *) output_header + first_part;
-////	new_phdr->p_offset = 42;
-//
-//	ElfN_Phdr *output_phdr = (void *) output_header + output_header->e_phoff;
-//	ft_printf("Will change the offset of programm headers: offset %lld nb %lld\n", output_header->e_phoff, output_header->e_phnum);
-//	for (u16 i = 0; i < output_header->e_phnum ; i++) {
-//		if (output_phdr->p_offset > output_header->e_phoff + output_header->e_phentsize * output_header->e_phnum) {
-//			output_phdr->p_offset += sizeof(ElfN_Phdr);
-//			output_phdr->p_vaddr += sizeof(ElfN_Phdr);
-//			output_phdr->p_paddr += sizeof(ElfN_Phdr);
-//		}
-//
-//		output_phdr++;
-//	}
-
-	ft_printf("Closed\n");
-//	((void(*)(void))&_payload64)();
-	sclose(output); // check ret
-	return 0;
 }

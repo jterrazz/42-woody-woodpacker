@@ -18,11 +18,7 @@ int main(int argc, char *argv[])
 	if (!(file = sopen(argv[1], 0, S_RDONLY))) {
 		return EXIT_FAILURE;
 	}
-	file_len = sfile_len(file);
-	if (!(file_start = sread(file, 0, file_len))) {
-		return EXIT_FAILURE;
-	}
-	read_elf(file_start, file_len);
+	read_elf(file);
 	sclose(file);
 	return 0;
 }

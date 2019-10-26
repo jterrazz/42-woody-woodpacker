@@ -84,7 +84,7 @@ $(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makef
 	-D ElfN_Shdr=Elf64_Shdr \
 	-D _64BITS
 
-$(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
+$(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile # TODO Update from 64
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D dump_program_header_generic=dump_program_header_32 \
 	-D ElfN_Ehdr=Elf32_Ehdr \
@@ -93,9 +93,13 @@ $(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makef
 	-D ElfN_Shdr=Elf32_Shdr \
 	-D _32BITS
 
-$(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
+$(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D dump_program_header_generic=dump_program_header_64 \
+	-D get_last_load_phdr_generic=get_last_load_phdr_64 \
+	-D insert_payload_generic=insert_payload_64 \
+	-D add_hdr_entry_generic=add_hdr_entry_64 \
+	-D add_shdr_generic=add_shdr_64 \
 	-D ElfN_Ehdr=Elf64_Ehdr \
 	-D ElfN_Off=Elf64_Off \
 	-D ElfN_Phdr=Elf64_Phdr \

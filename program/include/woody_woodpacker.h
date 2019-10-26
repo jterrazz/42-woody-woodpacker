@@ -2,6 +2,7 @@
 # define __WOODY_WOODPACKER_H__
 
 #include "libft.h"
+#include <elf.h>
 
 typedef unsigned char      u8;
 typedef unsigned short     u16;
@@ -29,7 +30,23 @@ size_t	sfile_len(STREAM *ctx);
  * elf.c
  * Elf toolkit
  */
-int read_elf(u8 *data, size_t len);
+#define OUTPUT_FILENAME "./woody"
+
+extern u8 _payload64;
+extern u64 _payload64_size;
+
+int read_elf(STREAM *file);
+
+Elf32_Ehdr *parse_elf_header_32(u8 *data, size_t len);
+Elf64_Ehdr *parse_elf_header_64(u8 *data, size_t len);
+Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
+Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
+int insert_payload_64(STREAM *output, STREAM *original);
+int insert_payload_32(STREAM *output, STREAM *original);
+int dump_section_header_32(u8 *data, size_t len);
+int dump_section_header_64(u8 *data, size_t len);
+int dump_program_header_32(u8 *data, size_t len);
+int dump_program_header_64(u8 *data, size_t len);
 
 /*
  * common.c
