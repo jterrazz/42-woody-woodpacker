@@ -35,7 +35,7 @@ STREAM *sopen(const char *filename, size_t file_len)
 		int ret = write(fd, "\0", 1);
 		if (ret < 0) {
 			perror("write");
-			unlink(filename);
+			unlink(filename); // TODO Not allowed
 			return NULL;
 		}
 	}

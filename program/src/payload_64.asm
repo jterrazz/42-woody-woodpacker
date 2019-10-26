@@ -35,9 +35,7 @@ _payload64:
 	pop rax
 	popf
 
-	jmp [rel _old_start_point]
-global _old_start_point
-_old_start_point: dq 0x530
+	jmp 0xFFFFFFFF
 .encrypted_data_start: dq 0
 .encrypted_data_len: dq 0
 .start_encode: dq 0

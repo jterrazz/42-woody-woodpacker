@@ -5,19 +5,19 @@
 
 extern u8 _payload64;
 extern u64 _payload64_size;
-extern u64 _old_start_point;
 
 #ifdef _64BITS //tmp
-int set_payload64(void *payload, size_t payload_size, u64 jump_addr, u64 encrypted_data_start, size_t encrypted_data_len, u64 encryption_key)
+int set_payload64(void *payload, size_t payload_size, u64 jump_addr, u64 encrypted_data_start, size_t encrypted_data_len, u64 encryption_key, u32 old_start)
 {
-	u64 *payload_end = payload + payload_size;
+	u32 *payload_end = payload + payload_size;
 
-	if (payload_size < 3 * 8)
+	if (payload_size < 3 * 8 + 4)
 		return 1;
 
-	*(payload_end - 3) = encrypted_data_start;
-	*(payload_end - 2) = encrypted_data_len;
-	*(payload_end - 1) = encryption_key;
+	*(payload_end - 7) = old_start; //  -(0x0020104d-0x530);
+	*(payload_end - 6) = encrypted_data_start;
+	*(payload_end - 4) = encrypted_data_len;
+	*(payload_end - 2) = encryption_key;
 
 	return 0;
 }
@@ -157,7 +157,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	if (swrite(output, &_payload64, new_startpoint_offset, _payload64_size))
 		return -1;
 	void *payload = sread(output, new_startpoint_offset, _payload64_size); // TODO secure
-	set_payload64(payload, _payload64_size, header->e_entry, 42, 42, 42);
+
 
 
 	/*
@@ -168,6 +168,10 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	if (output_header == NULL)
 		return -1;
 
+	u32 old_start_off = header->e_entry - last_load_phdr->p_vaddr - last_load_phdr->p_memsz - _payload64_size + 24;  // (u32) -((u64)&_payload_end - old_start);
+	set_payload64(payload, _payload64_size, header->e_entry, 42, 42, 42, old_start_off);
+
+	ft_printf("Will use relative offset of - %llx - %llx - %llx\n", last_load_phdr->p_vaddr, last_load_phdr->p_memsz, _payload64_size);
 	ft_printf("Will modify the original startpoint %llx to %llx\n", output_header->e_entry, new_startpoint_offset);
 
 	// IMPORTANT: C'est vraiment ici bordel ici mais je pense qu'il faut donner la Virt Addr et PAS l'offset dans le fichier
