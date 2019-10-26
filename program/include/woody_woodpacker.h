@@ -51,6 +51,8 @@ extern u64 _payload64_size;
 
 int read_elf(STREAM *file);
 
+int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
+
 int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
 int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
 int add_shdr_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
@@ -63,8 +65,6 @@ int insert_payload_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int insert_payload_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int parse_shdr_32(STREAM *file);
 int parse_shdr_64(STREAM *file);
-//int dump_program_header_32(u8 *data, size_t len);
-//int dump_program_header_64(u8 *data, size_t len);
 int update_phdr_32(STREAM *output, PACKER_CONFIG *config);
 int update_phdr_64(STREAM *output, PACKER_CONFIG *config);
 int set_payload64(void *payload, PACKER_CONFIG *config);

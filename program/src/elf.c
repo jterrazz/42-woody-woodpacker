@@ -140,7 +140,7 @@ int config_packer_for_last_load(STREAM *file, PACKER_CONFIG *packed_file)
 	packed_file->phdr_selected_off = (void *)phdr - start;
 	packed_file->bss_to_add = phdr->p_memsz - phdr->p_filesz;
 	packed_file->payload_len_aligned = (_payload64_size + 63) & ~63;
-	packed_file->real_payload_len = packed_file->payload_len_aligned + packed_file->bss_to_add;
+	packed_file->real_payload_len = packed_file->payload_len_aligned + packed_file->bss_to_add; // TODO Rename this bc its not the payload
 	packed_file->payload_file_off = phdr->p_offset + phdr->p_filesz;
 	packed_file->payload_mem_off = phdr->p_offset + phdr->p_memsz;
 	packed_file->payload_to_end_len = sfile_len(file) - packed_file->payload_file_off; // TODO Maybe do mem/file too
@@ -172,6 +172,9 @@ int start_packer(STREAM *file, u8 class)
 		|| update_phdr_64(output, &config)
 		|| add_shdr_64(output, file, &config)
 		)
+		return -1;
+
+	if (encrypt_old_phdrs(output, &config))
 		return -1;
 
 	void *payload = sread(output, config.new_startpoint_off, _payload64_size); // TODO secure

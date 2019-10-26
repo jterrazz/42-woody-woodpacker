@@ -129,3 +129,58 @@ int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 
 	return 0;
 }
+
+#ifdef _64BITS // TODO Generic
+// TODO Refactor: Maybe share a common functon to parse all phdr with get_last_load_phdr (by passing a ft ptr)
+int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config)
+{
+	ElfN_Ehdr *elf_hdr;
+	ElfN_Shdr *shdr;
+
+	// If not in the payload encrypt
+	if (!(elf_hdr = sread(output, 0, sizeof(ElfN_Ehdr))))
+		return -1;
+	if (!(shdr = sread(output, elf_hdr->e_shoff, elf_hdr->e_shnum * elf_hdr->e_shentsize))) {
+		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing program header table\n");
+		return -1;
+	}
+	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
+		if (shdr->sh_type == SHT_PROGBITS && shdr->sh_flags & SHF_ALLOC && shdr->sh_flags & SHF_EXECINSTR) { // TODO Maybe more sections ?
+
+#ifdef DEBUG
+			ElfN_Shdr *s = shdr;
+			int j = 0;
+			for (j = 0; j < SECTION_HEADER_TYPE_N; j++) {
+				if (section_header_type[j].type == shdr->sh_type)
+					break;
+			}
+			ft_printf("%2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
+				  s->sh_flags & SHF_WRITE ? 'W' : ' ',
+				  s->sh_flags & SHF_ALLOC ? 'A' : ' ',
+				  s->sh_flags & SHF_EXECINSTR ? 'X' : ' ',
+				  s->sh_addr,
+				  s->sh_offset,
+				  s->sh_size
+			);
+#endif
+
+			char *ptr = (char *)elf_hdr + shdr->sh_offset;
+			u64 end = (char *)elf_hdr + shdr->sh_offset + shdr->sh_size;
+
+			size_t safe_zone_start = (char *)elf_hdr + config->payload_file_off;
+			size_t safe_zone_end = safe_zone_start + config->payload_len_aligned;
+
+			// TODO Secure
+			while (ptr < end)
+			{
+				if (ptr < safe_zone_start || ptr > safe_zone_end) {
+					*ptr = 1;
+				}
+				ptr++;
+			}
+		}
+		shdr++;
+	}
+	return 0;
+}
+#endif
