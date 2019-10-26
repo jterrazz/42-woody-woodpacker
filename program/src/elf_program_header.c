@@ -81,13 +81,13 @@ int update_phdr_generic(STREAM *output, PACKER_CONFIG *config)
 }
 
 // TODO Rename using offset and addr
-int add_hdr_entry_generic(STREAM *output, size_t entry)
+int add_hdr_entry_generic(STREAM *output, PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
 	if (output_header == NULL)
 		return -1;
 
-	output_header->e_entry = entry;
+	output_header->e_entry = config->new_startpoint;
 	output_header->e_shnum += 1;
 	output_header->e_shstrndx += 1;
 }

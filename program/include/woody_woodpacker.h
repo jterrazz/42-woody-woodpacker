@@ -50,8 +50,8 @@ extern u64 _payload64_size;
 
 int read_elf(STREAM *file);
 
-int add_hdr_entry_64(STREAM *output, size_t entry);
-int add_hdr_entry_32(STREAM *output, size_t entry);
+int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
+int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
 int add_shdr_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int add_shdr_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 Elf32_Ehdr *parse_elf_header_32(u8 *data, size_t len);

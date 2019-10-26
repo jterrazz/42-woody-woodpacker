@@ -13,7 +13,7 @@ struct e_ident {
 	u8 pad[7];
 } __attribute__((packed));
 
-struct e_ident *parse_ident_field(STREAM *file)
+struct e_ident *parse_ident(STREAM *file)
 {
 	size_t len = sfile_len(file);
 	struct e_ident *e_ident = sread(file, 0, EI_NIDENT);
@@ -160,9 +160,8 @@ int read_elf(STREAM *file)
 	size_t output_len;
 	struct e_ident *ident_field;
 
-	if (!(ident_field = parse_ident_field(file)))
+	if ((ident_field = parse_ident(file)))
 	    return -1;
-
 	output_len = get_output_len(file);
 	if (config_packer_for_last_load(file, &config))
 		return -1;
@@ -170,15 +169,13 @@ int read_elf(STREAM *file)
 		return -1;
 
 	// TODO Secure calls
-	Elf64_Phdr *last_load_phdr = get_last_load_phdr_64(file);
 	insert_payload_64(output, file, &config); // TODO Maybe refactor for more generic (set an addr)
 	update_phdr_64(output, &config);
-	add_hdr_entry_64(output, last_load_phdr->p_memsz + last_load_phdr->p_vaddr);
+	add_hdr_entry_64(output, &config);
 	add_shdr_64(output, file, &config);
 
 	void *payload = sread(output, config.new_startpoint, _payload64_size); // TODO secure
 	set_payload64(payload, &config);
-
 
 	sclose(output);
 
