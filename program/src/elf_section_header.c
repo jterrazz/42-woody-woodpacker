@@ -147,7 +147,7 @@ int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config)
 	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
 		if (shdr->sh_type == SHT_PROGBITS && shdr->sh_flags & SHF_ALLOC && shdr->sh_flags & SHF_EXECINSTR) { // TODO Maybe more sections ?
 
-#ifdef DEBUG
+//#ifdef DEBUG
 			ElfN_Shdr *s = shdr;
 			int j = 0;
 			for (j = 0; j < SECTION_HEADER_TYPE_N; j++) {
@@ -162,10 +162,11 @@ int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config)
 				  s->sh_offset,
 				  s->sh_size
 			);
-#endif
+//#endif
 
-			char *ptr = (char *)elf_hdr + shdr->sh_offset;
-			u64 end = (char *)elf_hdr + shdr->sh_offset + shdr->sh_size;
+			// TODO Only if sh_addr exist
+			char *ptr = (char *)elf_hdr + shdr->sh_addr;
+			u64 end = (char *)elf_hdr + shdr->sh_addr + shdr->sh_size;
 
 			size_t safe_zone_start = (char *)elf_hdr + config->payload_file_off;
 			size_t safe_zone_end = safe_zone_start + config->payload_len_aligned;
@@ -174,10 +175,11 @@ int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config)
 			while (ptr < end)
 			{
 				if (ptr < safe_zone_start || ptr > safe_zone_end) {
-					*ptr = 1;
+					*ptr += 1;
 				}
 				ptr++;
 			}
+			break;
 		}
 		shdr++;
 	}

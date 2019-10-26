@@ -2,9 +2,11 @@
 
 global _payload64
 global _payload64_size
+extern puts
 
 segment .text
 _payload64:
+;	lea r8, [rip] ; TODO Use other register
     pushf
 	push rax
 	push rdx
@@ -26,7 +28,7 @@ _payload64:
 	pop rax
 	popf
 	jmp 0xFFFFFFFF
-.encrypted_data_start: dq 0xFFFFFFFFFFFFFFFF
-.encrypted_data_len: dq 0xFFFFFFFFFFFFFFFF
+.encrypted_data_start: dq 0x000004e8
+.encrypted_data_len: dq 0x17
 .start_encode: dq 0xFFFFFFFFFFFFFFFF
 _payload64_size: dq $-_payload64

@@ -12,8 +12,8 @@ int set_payload64(void *payload, PACKER_CONFIG *config)
 		return -1;
 
 	*(payload_end - 7) = config->relative_jmp_new_pg;
-	*(payload_end - 6) = 0;
-	*(payload_end - 4) = 0;
+	*(payload_end - 6) = 0x000004e8;
+	*(payload_end - 4) = 0x17;
 	*(payload_end - 2) = 0;
 
 	return 0;

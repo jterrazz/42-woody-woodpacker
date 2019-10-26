@@ -174,8 +174,8 @@ int start_packer(STREAM *file, u8 class)
 		)
 		return -1;
 
-	if (encrypt_old_phdrs(output, &config))
-		return -1;
+//	if (encrypt_old_phdrs(output, &config))
+//		return -1;
 
 	void *payload = sread(output, config.new_startpoint_off, _payload64_size); // TODO secure
 	set_payload64(payload, &config);
