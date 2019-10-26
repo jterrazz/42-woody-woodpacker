@@ -30,9 +30,9 @@ int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 	ElfN_Ehdr *output_header;
 
 	if (!(elf_hdr = sread(original, 0, sizeof(ElfN_Ehdr)))) // TODO Maybe use output for this
-		return NULL;
+		return -1;
 	if (!(output_header = sread(output, 0, sizeof(ElfN_Ehdr)))) // TODO Rename
-		return NULL;
+		return -1;
 
 	u64 sh_offset = elf_hdr->e_shoff;
 
@@ -76,13 +76,15 @@ int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 	new_sh->sh_name = 0;
 	new_sh->sh_type = SHT_PROGBITS;
 	new_sh->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
-	new_sh->sh_offset = config->new_startpoint;
-	new_sh->sh_addr = prev_sh->sh_addr + (config->new_startpoint - prev_sh->sh_offset);
+	new_sh->sh_offset = config->new_startpoint_off;
+	new_sh->sh_addr = prev_sh->sh_addr + (config->new_startpoint_off - prev_sh->sh_offset);
 	new_sh->sh_size = config->payload_len_aligned;
 	new_sh->sh_link = 0;
 	new_sh->sh_info =  0;
 	new_sh->sh_addralign = 16;
 	new_sh->sh_entsize = 0;
+
+	return 0;
 }
 
 int dump_section_header_generic(u8 *data, size_t len)

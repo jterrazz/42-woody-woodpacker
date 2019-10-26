@@ -40,7 +40,8 @@ typedef struct packer_config {
 	size_t payload_file_off;
 	size_t payload_mem_off;
 	size_t payload_to_end_len;
-	size_t new_startpoint;
+	size_t new_startpoint_vaddr;
+	size_t new_startpoint_off;
 	size_t old_startpoint;
 	int relative_jmp_new_pg;
 } PACKER_CONFIG;

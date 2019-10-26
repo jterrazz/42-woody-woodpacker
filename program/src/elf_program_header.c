@@ -46,9 +46,6 @@ int insert_payload_generic(STREAM *output, STREAM *original, PACKER_CONFIG *conf
 	void *ori_start;
 	size_t ori_len;
 
-	Elf64_Phdr *phdr;
-
-	phdr= get_last_load_phdr_64(original); // TODO Generic
 	ori_len = sfile_len(original);
 	ori_start = sread(original, 0, ori_len); // TODO secure
 
@@ -62,8 +59,10 @@ int insert_payload_generic(STREAM *output, STREAM *original, PACKER_CONFIG *conf
 		return -1;
 
 	ft_bzero(bss_section, config->bss_to_add);
-	if (swrite(output, &_payload64, config->new_startpoint, _payload64_size))
+	if (swrite(output, &_payload64, config->new_startpoint_off, _payload64_size))
 		return -1;
+
+	return 0;
 }
 
 int update_phdr_generic(STREAM *output, PACKER_CONFIG *config)
@@ -87,7 +86,9 @@ int add_hdr_entry_generic(STREAM *output, PACKER_CONFIG *config)
 	if (output_header == NULL)
 		return -1;
 
-	output_header->e_entry = config->new_startpoint;
+	output_header->e_entry = config->new_startpoint_vaddr;
 	output_header->e_shnum += 1;
 	output_header->e_shstrndx += 1;
+
+	return 0;
 }

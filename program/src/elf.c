@@ -15,7 +15,6 @@ struct e_ident {
 
 struct e_ident *parse_ident(STREAM *file)
 {
-	size_t len = sfile_len(file);
 	struct e_ident *e_ident = sread(file, 0, EI_NIDENT);
 	if (e_ident == NULL) {
 		return NULL;
@@ -144,7 +143,8 @@ int config_packer_for_last_load(STREAM *file, PACKER_CONFIG *packed_file)
 	packed_file->payload_file_off = phdr->p_offset + phdr->p_filesz;
 	packed_file->payload_mem_off = phdr->p_offset + phdr->p_memsz;
 	packed_file->payload_to_end_len = sfile_len(file) - packed_file->payload_file_off; // TODO Maybe do mem/file too
-	packed_file->new_startpoint = packed_file->payload_file_off + packed_file->bss_to_add; // TODO Maybe do mem/file too
+	packed_file->new_startpoint_vaddr = phdr->p_memsz + phdr->p_vaddr;
+	packed_file->new_startpoint_off = packed_file->payload_file_off + packed_file->bss_to_add; // TODO Maybe do mem/file too
 	packed_file->old_startpoint = ehdr->e_entry;
 
 	// TODO Probably better config this var
@@ -160,21 +160,26 @@ int read_elf(STREAM *file)
 	size_t output_len;
 	struct e_ident *ident_field;
 
-	if ((ident_field = parse_ident(file)))
+	if (!(ident_field = parse_ident(file)))
 	    return -1;
+
 	output_len = get_output_len(file);
+
 	if (config_packer_for_last_load(file, &config))
 		return -1;
 	if (!(output = sopen(OUTPUT_FILENAME, output_len, S_RDWR))) // TODO Will need to transform this to a simple mmap because compression will reduce size
 		return -1;
 
 	// TODO Secure calls
-	insert_payload_64(output, file, &config); // TODO Maybe refactor for more generic (set an addr)
-	update_phdr_64(output, &config);
-	add_hdr_entry_64(output, &config);
-	add_shdr_64(output, file, &config);
+	if (
+		insert_payload_64(output, file, &config)
+		|| add_hdr_entry_64(output, &config)
+		|| update_phdr_64(output, &config)
+		|| add_shdr_64(output, file, &config)
+	)
+		return -1;
 
-	void *payload = sread(output, config.new_startpoint, _payload64_size); // TODO secure
+	void *payload = sread(output, config.new_startpoint_off, _payload64_size); // TODO secure
 	set_payload64(payload, &config);
 
 	sclose(output);
