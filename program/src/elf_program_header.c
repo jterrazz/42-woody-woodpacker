@@ -14,7 +14,7 @@ int set_payload64(void *payload, size_t payload_size, u64 jump_addr, u64 encrypt
 	if (payload_size < 3 * 8 + 4)
 		return 1;
 
-	*(payload_end - 7) = old_start; //  -(0x0020104d-0x530);
+	*(payload_end - 7) = old_start;
 	*(payload_end - 6) = encrypted_data_start;
 	*(payload_end - 4) = encrypted_data_len;
 	*(payload_end - 2) = encryption_key;
@@ -101,21 +101,12 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 	 * Start the creation of new exec
 	 */
 
-	// IMPORTANT: Je ne suis pas d'accord avec la premiere proposition.
-	// La corruption de la section .comment vient sans doute de la.
-	// u64 before_payload_size = last_load_phdr->p_offset + last_load_phdr->p_memsz;
 	u64 before_payload_size = last_load_phdr->p_offset + last_load_phdr->p_filesz;
-
 	u64 last_load_bss_size = last_load_phdr->p_memsz - last_load_phdr->p_filesz;
-
 	u64 after_payload_size = bin_len - before_payload_size;
-
 	u64 new_startpoint_offset = before_payload_size + last_load_bss_size;
-
 	u64 aligned_payload64_size = (_payload64_size + 63) & ~63;
-
 	u64 shift_size = aligned_payload64_size + last_load_bss_size;
-
 
 	ft_printf("Aligned payload: %llx from original %llx", aligned_payload64_size, _payload64_size);
 
@@ -129,7 +120,7 @@ int dump_program_header_generic(void *bin_start, size_t bin_len)
 
 	u64 output_len = bin_len + shift_size + sizeof(ElfN_Shdr) + sizeof(ElfN_Phdr); // Remove ElfN_Phdr if no new program header
 
-	STREAM *output = sopen(OUTPUT_FILENAME, output_len);
+	STREAM *output = sopen(OUTPUT_FILENAME, output_len, S_RDWR);
 	if (!output) {
 		return -1;
 	}

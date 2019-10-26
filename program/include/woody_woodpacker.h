@@ -8,12 +8,22 @@ typedef unsigned short     u16;
 typedef unsigned int       u32;
 typedef unsigned long long u64;
 
+/*
+ * file.c
+ * File helpers
+ */
+
+#define S_RDONLY        0x0001          /* open for reading only */
+#define S_WRONLY        0x0002          /* open for writing only */
+#define S_RDWR          0x0003          /* open for reading and writing */
+
 typedef struct stream STREAM;
 
-STREAM *sopen(const char *filename, size_t file_len);
-int sclose(STREAM *ctx);
-void *sread(STREAM *ctx, size_t offset, size_t len);
-int swrite(STREAM *ctx, void *content, size_t offset, size_t len);
+STREAM	*sopen(const char *filename, size_t file_len, int oflag);
+int		sclose(STREAM *ctx);
+void	*sread(STREAM *ctx, size_t offset, size_t len);
+int		swrite(STREAM *ctx, void *content, size_t offset, size_t len);
+size_t	sfile_len(STREAM *ctx);
 
 /*
  * elf.c
@@ -35,6 +45,7 @@ u8 *secure_read(u8 *mem,
 #ifdef SILENT
 #define ft_printf(...) {}
 #define ft_dprintf(...) {}
+#define perror(...) {}
 #endif
 
 /*
