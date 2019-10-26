@@ -3,7 +3,7 @@ CC = gcc
 AS = nasm
 
 ifeq ($(DEBUG),yes)
-CFLAGS = -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra
+CFLAGS = -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra -D DEBUG
 else
 CFLAGS = -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
 endif
@@ -69,7 +69,7 @@ $(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
 $(OBJDIR)/elf_section_header_32.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D dump_section_header_generic=dump_section_header_32 \
+	-D parse_shdr_generic=parse_shdr_32 \
 	-D ElfN_Addr=Elf32_Addr \
 	-D ElfN_Off=Elf32_Off \
 	-D ElfN_Shdr=Elf32_Shdr \
@@ -78,7 +78,7 @@ $(OBJDIR)/elf_section_header_32.o: elf_section_header.c $(HEADERS) $(LIBS) Makef
 $(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D dump_section_header_generic=dump_section_header_64 \
+	-D parse_shdr_generic=parse_shdr_64 \
 	-D add_shdr_generic=add_shdr_64 \
 	-D ElfN_Addr=Elf64_Addr \
 	-D ElfN_Off=Elf64_Off \

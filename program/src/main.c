@@ -8,6 +8,15 @@
  * TODO: Test for 32 bits files
  */
 
+/*
+ * TERMINOLOGY
+ * ehdr: An elf header
+ * shdr: A section header
+ * phdr: A program header
+ *
+ * To learn more about them, try `man elf`
+ */
+
 int main(int argc, char *argv[])
 {
 	STREAM *file;

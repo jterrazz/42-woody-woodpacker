@@ -20,7 +20,7 @@ struct e_ident *parse_ident(STREAM *file)
 		return NULL;
 	}
 
-	ft_printf("EI_NIDENT system value is: %u.\n", EI_NIDENT);
+	FT_DEBUG("EI_NIDENT system value is: %u.\n", EI_NIDENT);
 	assert(EI_NIDENT == sizeof(struct e_ident));
 
 	char magic[4] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
@@ -31,10 +31,10 @@ struct e_ident *parse_ident(STREAM *file)
 
 	switch (e_ident->class) {
 	case ELFCLASS32:
-		ft_printf("ELF class 32.\n");
+		FT_DEBUG("ELF class 32.\n");
 		break;
 	case ELFCLASS64:
-		ft_printf("ELF class 64.\n");
+		FT_DEBUG("ELF class 64.\n");
 		break;
 	default:
 		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");
@@ -43,10 +43,10 @@ struct e_ident *parse_ident(STREAM *file)
 
 	switch (e_ident->endian) {
 	case ELFDATA2LSB:
-		ft_printf("Two's complement, little-endian.\n");
+		FT_DEBUG("Two's complement, little-endian.\n");
 		break;
 	case ELFDATA2MSB:
-		ft_printf("Two's complement, big-endian.\n");
+		FT_DEBUG("Two's complement, big-endian.\n");
 		break;
 	default:
 		ft_dprintf(STDERR_FILENO, "Unknown data format.\n");
@@ -55,14 +55,14 @@ struct e_ident *parse_ident(STREAM *file)
 
 	switch (e_ident->version) {
 	case EV_CURRENT:
-		ft_printf("ELF version is Current version.\n");
+		FT_DEBUG("ELF version is Current version.\n");
 		break;
 	case EV_NONE:
 		ft_dprintf(STDERR_FILENO, "Invalid version.\n");
 		return NULL;
 	default:
-		// I don't know how to manage that case
-		ft_printf("ELF version is %hhu\n", e_ident->version);
+		// TODO I don't know how to manage that case
+		FT_DEBUG("ELF version is %hhu\n", e_ident->version);
 		break;
 	}
 
@@ -102,9 +102,10 @@ struct e_ident *parse_ident(STREAM *file)
 		ft_dprintf(STDERR_FILENO, "Unknown OS ABI.\n");
 		return NULL;
 	}
-	ft_printf("%s\n", str);
+	FT_DEBUG("%s\n", str);
+	(void)str;
+	FT_DEBUG("Private ABI version is %hhu.\n", e_ident->version_abi);
 
-	ft_printf("Private ABI version is %hhu.\n", e_ident->version_abi);
 	return e_ident;
 }
 
@@ -155,9 +156,9 @@ int config_packer_for_last_load(STREAM *file, PACKER_CONFIG *packed_file)
 
 int start_packer(STREAM *file, u8 class)
 {
-	PACKER_CONFIG config;
-	STREAM *output;
-	size_t output_len;
+	PACKER_CONFIG	config;
+	STREAM			*output;
+	size_t			output_len;
 
 	output_len = get_output_len(file, class == ELFCLASS32 ? _payload64_size : _payload64_size);
 
@@ -183,25 +184,26 @@ int start_packer(STREAM *file, u8 class)
 
 int read_elf(STREAM *file)
 {
-	struct e_ident *ident_field;
+	struct e_ident	*ident_field;
+	void			*ehdr;
 
 	if (!(ident_field = parse_ident(file)))
 	    return -1;
 
 	if (ident_field->class == ELFCLASS32) {
+		if (!(ehdr = parse_elf_header_32(file)))
+			return -1;
+		if (parse_shdr_32(file))
+			return -1;
 		if (start_packer(file, ELFCLASS32))
 			return -1;
-//		Elf32_Ehdr *header = parse_elf_header_32(data, len);
-//		dump_section_header_32(data, len);
-//        dump_program_header_32(data, len);
-//        (void)header;
 	} else if (ident_field->class == ELFCLASS64) {
+		if (!(ehdr = parse_elf_header_32(file)))
+			return -1;
+		if (parse_shdr_64(file))
+			return -1;
 		if (start_packer(file, ELFCLASS64))
 			return -1;
-//		Elf64_Ehdr *header = parse_elf_header_64(data, len);
-//		dump_section_header_64(data, len);
-//        dump_program_header_64(data, len);
-//        (void)header;
 	} else {
 		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");
 		return -1;

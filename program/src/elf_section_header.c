@@ -24,6 +24,49 @@ static struct section_header_type section_header_type[SECTION_HEADER_TYPE_N] = {
 	{ SHT_DYNSYM, "DYNSYM" },
 };
 
+int parse_shdr_generic(STREAM *file)
+{
+	ElfN_Ehdr *ehdr;
+	ElfN_Shdr *shdr;
+
+	if (!(ehdr = sread(file, 0, sizeof(ElfN_Ehdr))))
+		return -1;
+
+	if (ehdr->e_shoff == 0) {
+		ft_printf("No section header found !");
+		return 0;
+	}
+
+	if (!(shdr = sread(file, ehdr->e_shoff, ehdr->e_shentsize * ehdr->e_shnum))) {
+		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing section header table\n");
+		return -1;
+	}
+
+	for (u16 i = 0; i < ehdr->e_shnum; i++) {
+		int j = 0;
+		for (j = 0; j < SECTION_HEADER_TYPE_N; j++) {
+			if (section_header_type[j].type == shdr[i].sh_type) {
+				break;
+			}
+		}
+		ElfN_Shdr *s = &shdr[i];
+		if (j != SECTION_HEADER_TYPE_N) {
+			FT_DEBUG("%2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
+				  s->sh_flags & SHF_WRITE ? 'W' : ' ',
+				  s->sh_flags & SHF_ALLOC ? 'A' : ' ',
+				  s->sh_flags & SHF_EXECINSTR ? 'X' : ' ',
+				  s->sh_addr,
+				  s->sh_offset,
+				  s->sh_size
+			);
+			(void)s; // TODO Find a way to use only when SILENT and not DEBUG
+		} else {
+			FT_DEBUG("%2hu: %20s\n", i, "Unknown section");
+		}
+	}
+	return 0;
+}
+
 int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *elf_hdr;
@@ -84,50 +127,5 @@ int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 	new_sh->sh_addralign = 16;
 	new_sh->sh_entsize = 0;
 
-	return 0;
-}
-
-int dump_section_header_generic(u8 *data, size_t len)
-{
-	ElfN_Ehdr *header = (ElfN_Ehdr *)secure_read(data, len, 0, sizeof(ElfN_Ehdr));
-	if (header == NULL) {
-		return -1;
-	}
-	size_t section_header_array_location = header->e_shoff;
-	if (section_header_array_location == 0) {
-		ft_printf("No section header found !");
-		return 0;
-	}
-	size_t section_header_length = header->e_shentsize * header->e_shnum;
-	ElfN_Shdr *section_header_array = (ElfN_Shdr *)secure_read(data, len, header->e_shoff, section_header_length);
-	if (section_header_array == NULL) {
-		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing section header table\n");
-		return -1;
-	}
-
-	for (u16 i = 0; i < header->e_shnum; i++) {
-		int j = 0;
-		for (j = 0; j < SECTION_HEADER_TYPE_N; j++) {
-			if (section_header_type[j].type == section_header_array[i].sh_type) {
-				break;
-			}
-		}
-		ElfN_Shdr *s = &section_header_array[i];
-		if (j != SECTION_HEADER_TYPE_N) {
-#ifdef SILENT
-			(void)s;
-#endif
-			ft_printf("%2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
-				  s->sh_flags & SHF_WRITE ? 'W' : ' ',
-				  s->sh_flags & SHF_ALLOC ? 'A' : ' ',
-				  s->sh_flags & SHF_EXECINSTR ? 'X' : ' ',
-				  s->sh_addr,
-				  s->sh_offset,
-				  s->sh_size
-			);
-		} else {
-			ft_printf("%2hu: %20s\n", i, "Unknown section");
-		}
-	}
 	return 0;
 }

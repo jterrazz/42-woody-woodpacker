@@ -55,16 +55,16 @@ int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
 int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
 int add_shdr_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int add_shdr_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
-Elf32_Ehdr *parse_elf_header_32(u8 *data, size_t len);
-Elf64_Ehdr *parse_elf_header_64(u8 *data, size_t len);
+Elf32_Ehdr *parse_elf_header_32(STREAM *file);
+Elf64_Ehdr *parse_elf_header_64(STREAM *file);
 Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
 Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
 int insert_payload_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int insert_payload_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
-int dump_section_header_32(u8 *data, size_t len);
-int dump_section_header_64(u8 *data, size_t len);
-int dump_program_header_32(u8 *data, size_t len);
-int dump_program_header_64(u8 *data, size_t len);
+int parse_shdr_32(STREAM *file);
+int parse_shdr_64(STREAM *file);
+//int dump_program_header_32(u8 *data, size_t len);
+//int dump_program_header_64(u8 *data, size_t len);
 int update_phdr_32(STREAM *output, PACKER_CONFIG *config);
 int update_phdr_64(STREAM *output, PACKER_CONFIG *config);
 int set_payload64(void *payload, PACKER_CONFIG *config);
@@ -81,11 +81,16 @@ u8 *secure_read(u8 *mem,
 		size_t len_to_read);
 
 #ifdef SILENT
-#define ft_printf(...) {}
-#define ft_dprintf(...) {}
-#define perror(...) {}
+# define ft_printf(...) {}
+# define ft_dprintf(...) {}
+# define perror(...) {}
 #endif
 
+#ifdef DEBUG
+# define FT_DEBUG(f_, ...) ft_printf((f_), ##__VA_ARGS__)
+#else
+# define FT_DEBUG(...) {}
+#endif
 /*
  * Avoid linking of forbidden functions in 42
  */
