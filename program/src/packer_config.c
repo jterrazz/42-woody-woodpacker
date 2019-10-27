@@ -42,7 +42,7 @@ int ARCH_PST(config_packer_for_last_load)(STREAM *file, PACKER_CONFIG *packed_fi
 	packed_file->insert_phdr_off = (void *)phdr - start;
 	packed_file->bss_len = phdr->p_memsz - phdr->p_filesz;
 	packed_file->payload_len_aligned = (ARCH_PST(_payload_size) + 63) & ~63;
-	packed_file->insert_len = packed_file->payload_len_aligned + packed_file->bss_len; // TODO Rename this bc its not the payload
+	packed_file->insert_len = packed_file->payload_len_aligned + packed_file->bss_len;
 	packed_file->insert_off = phdr->p_offset + phdr->p_filesz;
 	packed_file->payload_mem_off = phdr->p_offset + phdr->p_memsz;
 	packed_file->insert_to_end_len = sfile_len(file) - packed_file->insert_off;

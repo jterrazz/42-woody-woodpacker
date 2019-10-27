@@ -70,7 +70,8 @@ extern u64 _payload_size_64;
 
 int start_packer(STREAM *file);
 
-int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
+int encrypt_shdrs_32(STREAM *output, PACKER_CONFIG *config);
+int encrypt_shdrs_64(STREAM *output, PACKER_CONFIG *config);
 int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
 int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *packed_file);
 
@@ -91,8 +92,8 @@ int phdr_append_data_64(STREAM *output, PACKER_CONFIG *config);
 void *p_append_data_64(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
 void *p_append_data_32(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
 
-int parse_shdr_32(STREAM *file);
-int parse_shdr_64(STREAM *file);
+int parse_shdr_32(STREAM *file, void(*ft)(Elf32_Ehdr *ehdr, Elf32_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
+int parse_shdr_64(STREAM *file, void(*ft)(Elf64_Ehdr *ehdr, Elf64_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
 int config_payload_32(STREAM *out, PACKER_CONFIG *config);
 int config_payload_64(STREAM *out, PACKER_CONFIG *config);
 

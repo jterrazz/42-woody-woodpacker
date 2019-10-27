@@ -84,68 +84,40 @@ int ARCH_PST(add_shdr)(STREAM *file, PACKER_CONFIG *conf)
 	return 0;
 }
 
-#ifndef _64BITS // TODO Generic
-// TODO Refactor: Maybe share a common functon to parse all phdr with get_last_load_phdr (by passing a ft ptr)
-int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config)
+// TODO Maybe secure the moves
+static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config)
 {
-	ElfN_Ehdr *elf_hdr;
-	ElfN_Shdr *shdr;
+	if (shdr->sh_type == SHT_PROGBITS && shdr->sh_flags & SHF_ALLOC && shdr->sh_flags & SHF_EXECINSTR) {
+		if (!shdr->sh_addr)
+			return;
 
-	// If not in the payload encrypt
-	if (!(elf_hdr = sread(output, 0, sizeof(ElfN_Ehdr))))
-		return -1;
-	if (!(shdr = sread(output, elf_hdr->e_shoff, elf_hdr->e_shnum * elf_hdr->e_shentsize))) {
-		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing program header table\n");
-		return -1;
-	}
-	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
-		if (shdr->sh_type == SHT_PROGBITS && shdr->sh_flags & SHF_ALLOC && shdr->sh_flags & SHF_EXECINSTR) { // TODO Maybe more sections ?
+		char ptr = (char *)ehdr + shdr->sh_addr;
+		size_t end = (char *)ehdr + shdr->sh_addr + shdr->sh_size;
+		size_t safe_zone_start = (char *)ehdr + config->insert_off;
+		size_t safe_zone_end = safe_zone_start + config->payload_len_aligned;
 
-//#ifdef DEBUG
-			ElfN_Shdr *s = shdr;
-			int j = 0;
-			for (j = 0; j < SECTION_HEADER_TYPE_N; j++) {
-				if (section_header_type[j].type == shdr->sh_type)
-					break;
+		while (ptr < end)
+		{
+			if (ptr < safe_zone_start || ptr > safe_zone_end) {
+//				*ptr += 1;
 			}
-			ft_printf("Encrypt %2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
-				  s->sh_flags & SHF_WRITE ? 'W' : ' ',
-				  s->sh_flags & SHF_ALLOC ? 'A' : ' ',
-				  s->sh_flags & SHF_EXECINSTR ? 'X' : ' ',
-				  s->sh_addr,
-				  s->sh_offset,
-				  s->sh_size
-			);
-//#endif
-
-			// TODO Only if sh_addr exist
-			char *ptr = (char *)elf_hdr + shdr->sh_addr;
-			u64 end = (char *)elf_hdr + shdr->sh_addr + shdr->sh_size;
-
-			size_t safe_zone_start = (char *)elf_hdr + config->insert_off;
-			size_t safe_zone_end = safe_zone_start + config->payload_len_aligned;
-
-			// TODO Secure
-			while (ptr < end)
-			{
-				if (ptr < safe_zone_start || ptr > safe_zone_end) {
-					*ptr += 1;
-				}
-				ptr++;
-			}
-			break;
+			ptr++;
 		}
-		shdr++;
 	}
+}
+
+int ARCH_PST(encrypt_shdrs)(STREAM *file, PACKER_CONFIG *config)
+{
+	parse_shdr_64(file, &ARCH_PST(encrypt_shdr), config);
+	// TODO Maybe more sections ?
 	return 0;
 }
-#endif
 
 /*
  * Parsing
  */
 
-int ARCH_PST(parse_shdr)(STREAM *file)
+int ARCH_PST(parse_shdr)(STREAM *file, void(*ft)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *ehdr;
 	ElfN_Shdr *shdr;
@@ -164,15 +136,21 @@ int ARCH_PST(parse_shdr)(STREAM *file)
 	}
 
 	for (u16 i = 0; i < ehdr->e_shnum; i++) {
+		if (ft)
+			ft(ehdr, &shdr[i], config);
+
+#ifdef DEBUG
 		int j = 0;
+		ElfN_Shdr *s = &shdr[i];
+
 		for (j = 0; j < SECTION_HEADER_TYPE_N; j++) {
 			if (section_header_type[j].type == shdr[i].sh_type) {
 				break;
 			}
 		}
-		ElfN_Shdr *s = &shdr[i];
+
 		if (j != SECTION_HEADER_TYPE_N) {
-			FT_DEBUG("%2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
+			ft_printf("%2hu: %20s %c%c%c %.8x %.8x %.8x\n", i, section_header_type[j].s,
 				  s->sh_flags & SHF_WRITE ? 'W' : ' ',
 				  s->sh_flags & SHF_ALLOC ? 'A' : ' ',
 				  s->sh_flags & SHF_EXECINSTR ? 'X' : ' ',
@@ -180,10 +158,10 @@ int ARCH_PST(parse_shdr)(STREAM *file)
 				  s->sh_offset,
 				  s->sh_size
 			);
-			(void)s; // TODO Find a way to use only when SILENT and not DEBUG
 		} else {
-			FT_DEBUG("%2hu: %20s\n", i, "Unknown section");
+			ft_printf("%2hu: %20s\n", i, "Unknown section");
 		}
+#endif
 	}
 	return 0;
 }
