@@ -3,24 +3,25 @@
 #include <elf.h>
 
 /*
- * Packer
+ * PACKER
  */
 
-int ARCH_PST(ehdr_packed_config)(STREAM *output, PACKER_CONFIG *config)
+int ARCH_PST(ehdr_update)(STREAM *out, PACKER_CONFIG *conf)
 {
-	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
-	if (output_header == NULL)
+	ElfN_Ehdr *out_ehdr;
+
+	if (!(out_ehdr = sread(out, 0, sizeof(ElfN_Ehdr))))
 		return -1;
 
-	output_header->e_entry = config->new_startpoint_vaddr;
-	output_header->e_shnum += 1;
-	output_header->e_shstrndx += 1;
+	out_ehdr->e_entry = conf->new_startpoint_vaddr;
+	out_ehdr->e_shnum += 1;
+	out_ehdr->e_shstrndx += 1;
 
 	return 0;
 }
 
 /*
- * Parsing
+ * PARSING
  */
 
 ElfN_Ehdr *ARCH_PST(parse_ehdr)(STREAM *file)
@@ -30,10 +31,10 @@ ElfN_Ehdr *ARCH_PST(parse_ehdr)(STREAM *file)
 	if (!(header = sread(file, 0, sizeof(ElfN_Ehdr))))
 		return NULL;
 
-	// I consider only executable ELF type or shared object as valid here
+	// Only ELF executables or shared objects are valid
 	switch (header->e_type) {
 	case ET_NONE:
-		ft_dprintf(STDERR_FILENO, "Unknown ELF type.\n");
+		ft_dprintf(STDERR_FILENO, "unknown ELF type.\n");
 		return NULL;
 	case ET_REL:
 		ft_dprintf(STDERR_FILENO, "ELF type is a relocatable file.\n");
@@ -52,7 +53,7 @@ ElfN_Ehdr *ARCH_PST(parse_ehdr)(STREAM *file)
 		return NULL;
 	}
 
-	// We have only payloads for EM_386 or EM_X86_64 machine
+	// We have payloads for EM_386 and EM_X86_64 machines
 	switch (header->e_machine) {
 	case EM_386:
 		FT_DEBUG("intel 80386.\n");
@@ -65,10 +66,10 @@ ElfN_Ehdr *ARCH_PST(parse_ehdr)(STREAM *file)
 		return NULL;
 	}
 
-	// Only invalid version can interrupt the program
+	// An invalid version can interrupt the program
 	switch (header->e_version) {
 	case EV_CURRENT:
-		FT_DEBUG("The machine version is current.\n");
+		FT_DEBUG("the machine version is current.\n");
 		break;
 	case EV_NONE:
 		ft_dprintf(STDERR_FILENO, "this machine version is invalid.\n");

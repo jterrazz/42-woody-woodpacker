@@ -25,10 +25,7 @@ int ARCH_PST(config_packer_for_last_load)(STREAM *file, PACKER_CONFIG *conf)
 	conf->new_startpoint_vaddr = phdr->p_memsz + phdr->p_vaddr;
 	conf->payload_start_off = conf->insert_off + conf->bss_len;
 	conf->old_startpoint = ehdr->e_entry;
-
-	// TODO Probably do a generic function to get the offset from a payload variable to the file start
-	conf->relative_jmp_new_pg = conf->old_startpoint - phdr->p_vaddr - phdr->p_memsz - ARCH_PST(_payload_size) + 24;
-
+	conf->relative_jmp_new_pg = conf->old_startpoint - phdr->p_vaddr - phdr->p_memsz - ARCH_PST(_payload_size) + 24; // TODO Probably bad place to calculate this
 	conf->output_len = sfile_len(file) + conf->insert_len + sizeof(ElfN_Shdr);
 
 	return 0;

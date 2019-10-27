@@ -25,11 +25,11 @@ static struct section_header_type section_header_type[SECTION_HEADER_TYPE_N] = {
 };
 
 /*
- * Packer
+ * PACKER
  */
 
 /*
- * Return the first to be updated
+ * Update all section headers and return the first one to be modified
  */
 static void *ARCH_PST(update_shdrs_off)(ElfN_Shdr *shdr, size_t shnum, size_t offset, size_t insert_len)
 {
@@ -46,6 +46,9 @@ static void *ARCH_PST(update_shdrs_off)(ElfN_Shdr *shdr, size_t shnum, size_t of
 	return first_updated;
 }
 
+/*
+ * Add a section header at conf->insert_off and config it for the payload
+ */
 int ARCH_PST(add_shdr)(STREAM *file, PACKER_CONFIG *conf)
 {
 	ElfN_Ehdr	*ehdr;
@@ -84,9 +87,12 @@ int ARCH_PST(add_shdr)(STREAM *file, PACKER_CONFIG *conf)
 	return 0;
 }
 
-// TODO Maybe secure the moves
+/*
+ * Encrypt all the possible sections that still allow the program to start
+ */
 static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config)
 {
+	// TODO Maybe secure the moves
 	// TODO Maybe more sections ?
 	if (shdr->sh_type == SHT_PROGBITS && shdr->sh_flags & SHF_ALLOC && shdr->sh_flags & SHF_EXECINSTR) {
 		if (!shdr->sh_addr)
@@ -99,9 +105,8 @@ static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONF
 
 		while (ptr < end)
 		{
-			if (ptr < safe_zone_start || ptr > safe_zone_end) {
+			if (ptr < safe_zone_start || ptr > safe_zone_end)
 //				*ptr += 1;
-			}
 			ptr++;
 		}
 	}
@@ -114,7 +119,7 @@ int ARCH_PST(encrypt_shdrs)(STREAM *file, PACKER_CONFIG *config)
 }
 
 /*
- * Parsing
+ * PARSING
  */
 
 int ARCH_PST(parse_shdr)(STREAM *file, void(*ft)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config)

@@ -5,13 +5,15 @@
 
 struct e_ident *parse_ident(STREAM *file)
 {
-	struct e_ident *e_ident = sread(file, 0, EI_NIDENT);
-	if (e_ident == NULL)
+	struct e_ident *e_ident;
+	char magic[4] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
+
+	if (!(e_ident = sread(file, 0, EI_NIDENT)))
 		return NULL;
+
 	FT_DEBUG("EI_NIDENT system value is: %u.\n", EI_NIDENT);
 	assert(EI_NIDENT == sizeof(struct e_ident));
 
-	char magic[4] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
 	if (ft_memcmp(e_ident->magic, magic, 4) != 0) {
 		ft_dprintf(STDERR_FILENO, "Bad ELF magic\n");
 		return NULL;

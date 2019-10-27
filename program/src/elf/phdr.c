@@ -3,12 +3,11 @@
 #include <elf.h>
 #include <stdlib.h>
 
-// TODO Maybe use unique function for parse phdr
 ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 {
-	ElfN_Ehdr *elf_hdr;
-	ElfN_Phdr *phdr;
-	ElfN_Phdr *last_load_phdr = NULL;
+	ElfN_Ehdr	*elf_hdr;
+	ElfN_Phdr	*phdr;
+	ElfN_Phdr	*last_load_phdr = NULL;
 
 	if (!(elf_hdr = sread(file, 0, sizeof(ElfN_Ehdr))))
 		return NULL;
@@ -16,17 +15,21 @@ ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 		ft_dprintf(STDERR_FILENO, "Corrupted file while parsing program header table\n");
 		return NULL;
 	}
+
 	for (u16 i = 0; i < elf_hdr->e_phnum ; i++) {
 		if (phdr->p_type == PT_LOAD)
 			last_load_phdr = phdr;
 		phdr++;
 	}
+
 	return last_load_phdr;
 }
 
 /*
- * - insert data at conf->insert_off for conf->insert_len bytes
- * - data starts with a forced bss data set to zero
+ * Insert data at the end of a program.
+ * - offset: conf->insert_off
+ * - len in bytes: conf->insert_len
+ * If conf->bss_len is not zero, bss data is simulated before the data
  */
 void *ARCH_PST(p_append_data)(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len)
 {
@@ -49,7 +52,10 @@ void *ARCH_PST(p_append_data)(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void
 	return sread(out, conf->payload_start_off, src_len);
 }
 
-int ARCH_PST(phdr_append_data)(STREAM *output, PACKER_CONFIG *config)
+/*
+ *
+ */
+int ARCH_PST(phdr_update_for_payload)(STREAM *output, PACKER_CONFIG *config)
 {
 	ElfN_Phdr *phdr;
 

@@ -62,7 +62,7 @@ $(NAME): $(OBJ_C) $(OBJ_ASM)
 
 # Compile C files
 
-$(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS)
+$(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) # TODO Doesnt update when .c changes
 	mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
 

@@ -90,8 +90,8 @@ int config_payload_64(STREAM *out, PACKER_CONFIG *config);
 
 Elf32_Ehdr *parse_ehdr_32(STREAM *file);
 Elf64_Ehdr *parse_ehdr_64(STREAM *file);
-int ehdr_packed_config_64(STREAM *output, PACKER_CONFIG *config);
-int ehdr_packed_config_32(STREAM *output, PACKER_CONFIG *config);
+int ehdr_update_64(STREAM *output, PACKER_CONFIG *config);
+int ehdr_update_32(STREAM *output, PACKER_CONFIG *config);
 
 /*
  * shdr.c
@@ -110,8 +110,8 @@ int parse_shdr_64(STREAM *file, void(*ft)(Elf64_Ehdr *ehdr, Elf64_Shdr *shdr, PA
  * ELF Program header related methods
  */
 
-int phdr_append_data_32(STREAM *output, PACKER_CONFIG *config);
-int phdr_append_data_64(STREAM *output, PACKER_CONFIG *config);
+int phdr_update_for_payload_32(STREAM *output, PACKER_CONFIG *config);
+int phdr_update_for_payload_64(STREAM *output, PACKER_CONFIG *config);
 Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
 Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
 void *p_append_data_64(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
