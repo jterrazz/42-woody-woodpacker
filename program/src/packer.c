@@ -43,7 +43,7 @@ int ARCH_PST(create_packed)(STREAM *file)
 
 	if (
 		!ARCH_PST(p_append_data)(output, file, &config, ARCH_PST(&_payload), ARCH_PST(_payload_size))
-		|| ARCH_PST(add_hdr_entry)(output, &config)
+		|| ARCH_PST(ehdr_packed_config)(output, &config)
 		|| ARCH_PST(phdr_append_data)(output, &config)
 		|| ARCH_PST(add_shdr)(output, file, &config)
 //		|| encrypt_old_phdrs(output, &config)
@@ -64,12 +64,12 @@ int start_packer(STREAM *file)
 	    return -1;
 
 	if (ident_field->class == ELFCLASS32) {
-		if (!parse_elf_header_32(file) || parse_shdr_32(file))
+		if (!parse_ehdr_32(file) || parse_shdr_32(file))
 			return -1;
 		if (create_packed_32(file))
 			return -1;
 	} else if (ident_field->class == ELFCLASS64) {
-		if (!parse_elf_header_64(file) || parse_shdr_64(file))
+		if (!parse_ehdr_64(file) || parse_shdr_64(file))
 			return -1;
 		if (create_packed_64(file))
 			return -1;

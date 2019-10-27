@@ -2,7 +2,11 @@
 
 #include <elf.h>
 
-int ARCH_PST(add_hdr_entry)(STREAM *output, PACKER_CONFIG *config)
+/*
+ * Packer
+ */
+
+int ARCH_PST(ehdr_packed_config)(STREAM *output, PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
 	if (output_header == NULL)
@@ -15,7 +19,11 @@ int ARCH_PST(add_hdr_entry)(STREAM *output, PACKER_CONFIG *config)
 	return 0;
 }
 
-ElfN_Ehdr *ARCH_PST(parse_elf_header)(STREAM *file)
+/*
+ * Parsing
+ */
+
+ElfN_Ehdr *ARCH_PST(parse_ehdr)(STREAM *file)
 {
 	ElfN_Ehdr *header;
 
