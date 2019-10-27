@@ -12,8 +12,8 @@ _payload32_size:    dq $-_payload32
 
 [BITS 64]
 segment .text
-global _payload64
-_payload64:
+global _payload_64
+_payload_64:
 	push rbp
 	mov rbp, rsp
 
@@ -54,8 +54,8 @@ _payload64:
 .encrypted_data_start: dq 0
 .encrypted_data_len: dq 0
 .start_encode: dq 0
-global _payload64_size
-_payload64_size: dq $-_payload64
+global _payload_size_64
+_payload_size_64: dq $-_payload_64
 
 ; MODIFICATION TRY
 

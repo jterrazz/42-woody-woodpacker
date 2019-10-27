@@ -23,9 +23,9 @@ OBJDIR = obj
 
 VPATH += src
 # common C files
-SRC_C += main common packer file ident packer_config
+SRC_C += main common file ident packer_config
 # generic C files
-SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64 elf_program_header_32 elf_program_header_64
+SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64 elf_program_header_32 elf_program_header_64 packer_32 packer_64
 SRC_ASM += payload_64 payload_32
 
 HEADERS += include/woody_woodpacker.h
@@ -98,15 +98,16 @@ $(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makef
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D dump_program_header_generic=dump_program_header_64 \
 	-D get_last_load_phdr_generic=get_last_load_phdr_64 \
-	-D __N__=64 \
 	-D add_hdr_entry_generic=add_hdr_entry_64 \
-	-D update_phdr_generic=update_phdr_64 \
-	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D ElfN_Off=Elf64_Off \
-	-D ElfN_Phdr=Elf64_Phdr \
-	-D ElfN_Shdr=Elf64_Shdr \
 	-D _64BITS
-#	-D insert_payload_generic=insert_payload_64 \
+
+$(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS) Makefile # TODO Update from 64
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D _32BITS
+
+$(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D _64BITS
 
 # asm files
 

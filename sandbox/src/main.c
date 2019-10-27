@@ -8,13 +8,13 @@
 #include <stdlib.h>
 
 extern u8 _payload32;
-extern u8 _payload64;
+extern u8 _payload_64;
 extern u8 _modification_try;
 extern u8 _jump_base;
 extern u8 _writer;
 
 extern u64 _payload32_size;
-extern u64 _payload64_size;
+extern u64 _payload_size_64;
 extern u64 _modification_try_size;
 extern u64 _jump_base_size;
 extern u64 _writer_size;
@@ -53,7 +53,7 @@ char *get_payload_copy(void)
     }
 
     printf("allocation mmap at %p\n", data);
-    memcpy(data, &_payload64, (size_t)_payload64_size);
+    memcpy(data, &_payload_64, (size_t)_payload_size_64);
     printf("copied the payload at %p\n", data);
     return data;
 }
@@ -139,7 +139,7 @@ void test_encryption()
         return;
 
     printf("Data to encrypt origin: %s\n", addr_to_encrypt);
-    config_payload64(payload, _payload64_size, (u64)addr_to_encrypt, 6, 42424242);
+    config_payload64(payload, _payload_size_64, (u64)addr_to_encrypt, 6, 42424242);
     encrypt_addr(addr_to_encrypt, 6);
     printf("Encrypt data: %s\n", addr_to_encrypt);
     ((void(*)(void))payload)();
@@ -150,7 +150,7 @@ void test_encryption()
 void test_original_payload_infos(void)
 {
     printf("size of payload32: %llu\n", _payload32_size);
-    printf("size of payload64: %llu\n", _payload64_size);
+    printf("size of payload64: %llu\n", _payload_size_64);
 }
 
 int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))

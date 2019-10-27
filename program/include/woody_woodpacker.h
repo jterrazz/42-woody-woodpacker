@@ -63,13 +63,18 @@ typedef struct packer_config {
 	int relative_jmp_new_pg;
 } PACKER_CONFIG;
 
-extern u8 _payload64;
-extern u64 _payload64_size;
+extern u8 _payload_32;
+extern u8 _payload_64;
+extern u64 _payload_size_32;
+extern u64 _payload_size_64;
 
 int start_packer(STREAM *file);
 
 int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
 int config_packer_for_last_load(STREAM *file, u8 elf_class, PACKER_CONFIG *packed_file);
+
+int create_packed_output_32(STREAM *file, u8 elf_class);
+int create_packed_output_64(STREAM *file, u8 elf_class);
 
 int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
 int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
@@ -88,9 +93,17 @@ int update_phdr_64(STREAM *output, PACKER_CONFIG *config);
 int set_payload64(void *payload, PACKER_CONFIG *config);
 
 #ifdef _32BITS
-#define ARCH_PST(S) S ## _32
+# define ARCH_PST(S) S ## _32
+# define ElfN_Ehdr Elf32_Ehdr
+# define ElfN_Phdr Elf32_Phdr
+# define ElfN_Shdr Elf32_Shdr
+# define ElfN_Off Elf32_Off
 #else
-#define ARCH_PST(S) S ## _64
+# define ARCH_PST(S) S ## _64
+# define ElfN_Ehdr Elf64_Ehdr
+# define ElfN_Phdr Elf64_Phdr
+# define ElfN_Shdr Elf64_Shdr
+# define ElfN_Off Elf64_Off
 #endif
 
 #ifdef SILENT

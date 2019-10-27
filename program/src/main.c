@@ -6,6 +6,7 @@
 /*
  * TODO: Check file with no load phdr
  * TODO: Test for 32 bits files
+ * TODO: Remove elf.h for 42
  */
 
 /*

@@ -1,11 +1,11 @@
 [BITS 64]
 
-global _payload64
-global _payload64_size
+global _payload_64
+global _payload_size_64
 extern puts
 
 segment .text
-_payload64:
+_payload_64:
 ;	lea r8, [rip] ; TODO Use other register
     pushf
 	push rax
@@ -31,4 +31,4 @@ _payload64:
 .encrypted_data_start: dq 0x000004e8
 .encrypted_data_len: dq 0x17
 .start_encode: dq 0xFFFFFFFFFFFFFFFF
-_payload64_size: dq $-_payload64
+_payload_size_64: dq $-_payload_64

@@ -6,9 +6,9 @@
 #ifdef _64BITS // TODO Generic
 int set_payload64(void *payload, PACKER_CONFIG *config)
 {
-	u32 *payload_end = payload + _payload64_size;
+	u32 *payload_end = payload + _payload_size_64;
 
-	if (_payload64_size < 3 * 8 + 4)
+	if (_payload_size_64 < 3 * 8 + 4)
 		return -1;
 
 	*(payload_end - 7) = config->relative_jmp_new_pg;
@@ -20,7 +20,7 @@ int set_payload64(void *payload, PACKER_CONFIG *config)
 }
 #endif
 
-ElfN_Phdr *get_last_load_phdr_generic(STREAM *file)
+ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 {
 	ElfN_Ehdr *elf_hdr;
 	ElfN_Phdr *phdr;
@@ -57,13 +57,14 @@ int ARCH_PST(insert_payload)(STREAM *output, STREAM *original, PACKER_CONFIG *co
 	if (!(output_bss = sread(output, config->payload_file_off, config->bss_to_add)))
 		return -1;
 	ft_bzero(output_bss, config->bss_to_add);
-	if (swrite(output, &_payload64, config->new_startpoint_off, _payload64_size))
+
+	if (swrite(output, ARCH_PST(&_payload), config->new_startpoint_off, ARCH_PST(_payload_size)))
 		return -1;
 
 	return 0;
 }
 
-int update_phdr_generic(STREAM *output, PACKER_CONFIG *config)
+int ARCH_PST(update_phdr)(STREAM *output, PACKER_CONFIG *config)
 {
 	ElfN_Phdr *output_last_load_header;
 
@@ -78,7 +79,7 @@ int update_phdr_generic(STREAM *output, PACKER_CONFIG *config)
 }
 
 // TODO Rename using offset and addr
-int add_hdr_entry_generic(STREAM *output, PACKER_CONFIG *config)
+int ARCH_PST(add_hdr_entry)(STREAM *output, PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
 	if (output_header == NULL)
