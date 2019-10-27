@@ -79,8 +79,8 @@ int create_packed_64(STREAM *file);
 
 int ehdr_packed_config_64(STREAM *output, PACKER_CONFIG *config);
 int ehdr_packed_config_32(STREAM *output, PACKER_CONFIG *config);
-int add_shdr_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
-int add_shdr_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
+int add_shdr_64(STREAM *file, PACKER_CONFIG *conf);
+int add_shdr_32(STREAM *file, PACKER_CONFIG *config);
 Elf32_Ehdr *parse_ehdr_32(STREAM *file);
 Elf64_Ehdr *parse_ehdr_64(STREAM *file);
 Elf32_Phdr *get_last_load_phdr_32(STREAM *file);

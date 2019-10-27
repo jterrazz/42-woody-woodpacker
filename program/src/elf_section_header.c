@@ -28,65 +28,58 @@ static struct section_header_type section_header_type[SECTION_HEADER_TYPE_N] = {
  * Packer
  */
 
-int ARCH_PST(add_shdr)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
+/*
+ * Return the first to be updated
+ */
+static void *ARCH_PST(update_shdrs_off)(ElfN_Shdr *shdr, size_t shnum, size_t offset, size_t insert_len)
 {
-	ElfN_Ehdr *elf_hdr;
-	ElfN_Ehdr *output_header;
+	void *first_updated = 0;
 
-	if (!(elf_hdr = sread(output, 0, sizeof(ElfN_Ehdr)))) // TODO Maybe use output for this
-		return -1;
-	if (!(output_header = sread(output, 0, sizeof(ElfN_Ehdr)))) // TODO Rename
-		return -1;
-
-	u64 sh_offset = elf_hdr->e_shoff;
-
-	if (sh_offset > config->insert_off) // TODO Use insted at returned in main
-		sh_offset += config->insert_len;
-	output_header->e_shoff = sh_offset;
-
-	ElfN_Shdr *output_sh = sread(output, sh_offset, sizeof(ElfN_Shdr) * output_header->e_shnum);
-	if (!output_sh)
-		return -1;
-
-	/*
-	 * Update old segments with their new offsets
-	 */
-
-	void *new_shdr_addr = 0;
-	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
-		if (output_sh->sh_offset > config->insert_off) {
-			if (!new_shdr_addr)
-				new_shdr_addr = output_sh;
-			output_sh->sh_offset += config->insert_len;
+	for (u16 i = 0; i < shnum ; i++) {
+		if (shdr->sh_offset > offset) {
+			if (!first_updated)
+				first_updated = shdr;
+			shdr->sh_offset += insert_len;
 		}
-		output_sh++;
+		shdr++;
 	}
+	return first_updated;
+}
 
-	/*
-	 * Add and setup a new segment
-	 */
+int ARCH_PST(add_shdr)(STREAM *file, PACKER_CONFIG *conf)
+{
+	ElfN_Ehdr	*ehdr;
+	ElfN_Shdr	*shdr;
 
-//	new_shdr_addr -= sizeof(ElfN_Shdr); // TODO Only do that if the last segment was a BSS and had empty space
-	ElfN_Shdr *prev_sh = new_shdr_addr - sizeof(ElfN_Shdr) ;
-
-	((ElfN_Shdr *)new_shdr_addr)->sh_offset += config->insert_len;
-
-	u64 new_sh_offset = new_shdr_addr - (void *)output_header;
-	u64 end_output_to_move_size = sfile_len(output) - new_sh_offset - sizeof(ElfN_Shdr);
-	if (swrite(output, new_shdr_addr, new_sh_offset + sizeof(ElfN_Shdr), end_output_to_move_size))
+	if (!(ehdr = sread(file, 0, sizeof(ElfN_Ehdr))))
 		return -1;
 
-	ElfN_Shdr *new_sh = new_shdr_addr;
-	new_sh->sh_name = 0;
-	new_sh->sh_type = SHT_PROGBITS;
-	new_sh->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
-	new_sh->sh_offset = config->payload_start_off;
-	new_sh->sh_addr = prev_sh->sh_addr + (config->payload_start_off - prev_sh->sh_offset);
-	new_sh->sh_size = config->payload_len_aligned;
-	new_sh->sh_link = 0;
-	new_sh->sh_info =  0;
-	new_sh->sh_addralign = 16;
-	new_sh->sh_entsize = 0;
+	if (ehdr->e_shoff > conf->insert_off)
+		ehdr->e_shoff += conf->insert_len;
+
+	if (!(shdr = sread(file, ehdr->e_shoff, sizeof(ElfN_Shdr) * ehdr->e_shnum)))
+		return -1;
+
+	ElfN_Shdr *new_shdr = ARCH_PST(update_shdrs_off)(shdr, ehdr->e_shnum, conf->insert_off, conf->insert_len);
+	ElfN_Shdr *prev_shdr = new_shdr - 1; // TODO This is not secure
+
+	new_shdr->sh_offset += conf->insert_len;
+	size_t new_shdr_off = (void *)new_shdr - (void *)ehdr;
+	size_t shift_len = sfile_len(file) - new_shdr_off - sizeof(ElfN_Shdr);
+
+	if (swrite(file, new_shdr, new_shdr_off + sizeof(ElfN_Shdr), shift_len))
+		return -1;
+
+	new_shdr->sh_name = 0;
+	new_shdr->sh_type = SHT_PROGBITS;
+	new_shdr->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
+	new_shdr->sh_offset = conf->payload_start_off;
+	new_shdr->sh_addr = prev_shdr->sh_addr + (conf->payload_start_off - prev_shdr->sh_offset);
+	new_shdr->sh_size = conf->payload_len_aligned;
+	new_shdr->sh_link = 0;
+	new_shdr->sh_info =  0;
+	new_shdr->sh_addralign = 16;
+	new_shdr->sh_entsize = 0;
 
 	return 0;
 }
