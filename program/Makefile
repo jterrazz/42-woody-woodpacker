@@ -2,6 +2,10 @@ NAME = woody_woodpacker
 CC = gcc
 AS = nasm
 
+###########################
+#          FLAGS          #
+###########################
+
 ifeq ($(DEBUG),yes)
 CFLAGS = -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra -D DEBUG
 else
@@ -19,6 +23,10 @@ ifeq ($(_42_),yes)
 CFLAGS += -D _42_
 endif
 
+###########################
+#         SOURCES         #
+###########################
+
 OBJDIR = obj
 
 VPATH += src
@@ -33,6 +41,10 @@ LIBS += libft_ng/libft.a
 
 OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
 OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))
+
+###########################
+#          RULES          #
+###########################
 
 .PHONY: all re clean fclean help mrproper exec
 
