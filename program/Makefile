@@ -63,23 +63,23 @@ $(NAME): $(OBJ_C) $(OBJ_ASM)
 # Compile C files
 
 $(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) # TODO Doesnt update when .c changes
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
 # Support for 32/64 bits
 
 $(OBJDIR)/%__32.o: $(subst $(OBJDIR),$(VPATH),$(@:__32.o=.c))
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $(subst $(OBJDIR),$(VPATH),$(@:__32.o=.c)) -D _32BITS
 
 $(OBJDIR)/%__64.o: $(subst $(OBJDIR),$(VPATH),$(@:__64.o=.c))
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $(subst $(OBJDIR),$(VPATH),$(@:__64.o=.c)) -D _64BITS
 
 # Compile ASM files
 
 $(OBJDIR)/%.o: %.asm $(LIBS)
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $<
 
 # Other targets

@@ -102,8 +102,8 @@ int encrypt_shdrs_32(STREAM *output, PACKER_CONFIG *config);
 int encrypt_shdrs_64(STREAM *output, PACKER_CONFIG *config);
 int add_shdr_64(STREAM *file, PACKER_CONFIG *conf);
 int add_shdr_32(STREAM *file, PACKER_CONFIG *config);
-int parse_shdr_32(STREAM *file, void(*ft)(Elf32_Ehdr *ehdr, Elf32_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
-int parse_shdr_64(STREAM *file, void(*ft)(Elf64_Ehdr *ehdr, Elf64_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
+int parse_shdr_32(STREAM *file, void (*ft)(Elf32_Ehdr *ehdr, Elf32_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
+int parse_shdr_64(STREAM *file, void (*ft)(Elf64_Ehdr *ehdr, Elf64_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
 
 /*
  * phdr.c

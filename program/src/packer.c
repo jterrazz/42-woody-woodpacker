@@ -10,9 +10,9 @@ int ARCH_PST(config_payload)(STREAM *out, PACKER_CONFIG *config)
 	u32		*payload_end;
 
 #ifndef _64BITS
-	u8 mul = 1;
+	unsigned int mul = 1;
 #else
-	u8 mul = 2;
+	unsigned int mul = 2;
 #endif
 
 	if (!(payload = sread(out, config->payload_start_off, ARCH_PST(_payload_size))))

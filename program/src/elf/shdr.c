@@ -4,6 +4,7 @@
 
 #define SECTION_HEADER_TYPE_N 12
 
+#ifdef DEBUG
 struct section_header_type {
 	u32 type;
 	char *s;
@@ -23,6 +24,7 @@ static struct section_header_type section_header_type[SECTION_HEADER_TYPE_N] = {
 	{ SHT_SHLIB, "SHLIB" },
 	{ SHT_DYNSYM, "DYNSYM" },
 };
+#endif
 
 /*
  * PACKER
@@ -90,7 +92,7 @@ int ARCH_PST(add_shdr)(STREAM *file, PACKER_CONFIG *conf)
 /*
  * Encrypt all the possible sections that still allow the program to start
  */
-static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config)
+void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config)
 {
 	// TODO Maybe secure the moves
 	// TODO Maybe more sections ?
@@ -98,10 +100,10 @@ static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONF
 		if (!shdr->sh_addr)
 			return;
 
-		char ptr = (char *)ehdr + shdr->sh_addr;
-		size_t end = (char *)ehdr + shdr->sh_addr + shdr->sh_size;
-		size_t safe_zone_start = (char *)ehdr + config->insert_off;
-		size_t safe_zone_end = safe_zone_start + config->payload_len_aligned;
+		char *ptr = (char *)ehdr + shdr->sh_addr;
+		char *end = ptr + shdr->sh_size;
+		char *safe_zone_start = (char *)ehdr + config->insert_off;
+		char *safe_zone_end = safe_zone_start + config->payload_len_aligned;
 
 		while (ptr < end)
 		{
@@ -122,7 +124,7 @@ int ARCH_PST(encrypt_shdrs)(STREAM *file, PACKER_CONFIG *config)
  * PARSING
  */
 
-int ARCH_PST(parse_shdr)(STREAM *file, void(*ft)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config)
+int ARCH_PST(parse_shdr)(STREAM *file, void (*ft)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *ehdr;
 	ElfN_Shdr *shdr;
