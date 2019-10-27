@@ -1,0 +1,42 @@
+     1                                  [BITS 64]
+     2                                  
+     3                                  global _ft_rc4
+     4                                  extern printf
+     5                                  
+     6                                  ; rdi data
+     7                                  ; rsi data_len
+     8                                  ; rdx key
+     9                                  ; rcx keu_len
+    10                                  section .data
+    11 00000000 00<rept>                S: times 256 db 0
+    12 00000100 00<rept>                K: times 256 db 0
+    13                                  
+    14                                  ; TODO Push / pop used registers
+    15                                  section .text
+    16                                  _ft_rc4:
+    17 00000000 9C                      	pushfq
+    18 00000001 4883FE00                	cmp rsi, 0
+    19 00000005 742D                    	je end
+    20                                  
+    21                                  init_s:
+    22 00000007 4C8D05(00000000)        	lea r8, [rel S]
+    23 0000000E 4D31C9                  	xor r9, r9
+    24                                  	loop_s: ; Could probably replace by a processor opti
+    25 00000011 458808                  		mov BYTE[r8], r9b
+    26 00000014 49FFC1                  		inc r9
+    27 00000017 49FFC1                  		inc r9
+    28 0000001A 4981F900010000          		cmp r9, 256
+    29 00000021 7D07                    		jge init_k
+    30 00000023 EBEC                    	jmp loop_s
+    31                                  
+    32 00000025 E8(00000000)            	call printf
+    33                                  init_k:
+    34 0000002A 4C8D05(00010000)        	lea r8, [rel K]
+    35 00000031 4D31C9                  	xor r9, r9
+    36                                  	loop_k:
+    37                                  ;		mov r10 ; res
+    38                                  
+    39                                  state_permutation:
+    40                                  end:
+    41 00000034 9D                      	popfq
+    42 00000035 C3                      	ret

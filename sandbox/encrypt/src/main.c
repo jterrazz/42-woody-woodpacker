@@ -1,23 +1,27 @@
 #include <stdio.h>
 #include <string.h>
 
-extern void ft_rc4(char *data, size_t data_len, char const *key, size_t key_len);
+extern void ft_rc4(char *data, size_t data_len, char *key, size_t key_len);
+extern void ft_rc4_set_s(char *data);
+//extern void ft_rc4_set_k(char *data, char *key, size_t ley_len);
 
-void rc4(char *data, size_t data_len, char const *key, size_t key_len, char *result)
+void rc4(char *data, size_t data_len, char *key, size_t key_len, char *result)
 {
-	unsigned char T[256];
-	unsigned char S[256];
-	unsigned char tmp;
+	char K[256];
+	char S[256];
+	char tmp;
 
 	for (int i = 0; i < 256; i++) {
-		S[i] = i;
-		T[i] = key[i % key_len];
+//		S[i] = i;
+		K[i] = key[i % key_len];
 	}
+	ft_rc4_set_s(S);
+//	ft_rc4_set_k(K, key, key_len);
 
 	int j = 0;
 	for(int i = 0; i < 256; i++)
 	{
-		j = (j + S[i] + T[i]) % 256;
+		j = (j + S[i] + K[i]) % 256;
 
 		tmp = S[j];
 		S[j]= S[i];
@@ -26,7 +30,7 @@ void rc4(char *data, size_t data_len, char const *key, size_t key_len, char *res
 
 	j = 0;
 	int i = 0;
-	for(int x = 0 ; x < data_len ; x++)
+	for(size_t x = 0 ; x < data_len ; x++)
 	{
 		i = (i + 1) % 256;
 		j = (j + S[i]) % 256;
@@ -53,7 +57,7 @@ int main(int argc, char *argv[])
 	rc4(data, strlen(data), key, strlen(key), data);
 	printf("Decrypted: %s\n", data);
 
-	ft_rc4(data, strlen(data), key, strlen(key));
+//	ft_rc4(data, strlen(data), key, strlen(key));
 
 	return 0;
 }
