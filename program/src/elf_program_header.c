@@ -3,23 +3,6 @@
 #include <elf.h>
 #include <stdlib.h>
 
-#ifdef _64BITS // TODO Generic
-int set_payload64(void *payload, PACKER_CONFIG *config)
-{
-	u32 *payload_end = payload + _payload_size_64;
-
-	if (_payload_size_64 < 3 * 8 + 4)
-		return -1;
-
-	*(payload_end - 7) = config->relative_jmp_new_pg;
-	*(payload_end - 6) = 0x000004e8;
-	*(payload_end - 4) = 0x17;
-	*(payload_end - 2) = 0;
-
-	return 0;
-}
-#endif
-
 ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 {
 	ElfN_Ehdr *elf_hdr;

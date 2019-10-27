@@ -23,9 +23,9 @@ OBJDIR = obj
 
 VPATH += src
 # common C files
-SRC_C += main common file ident packer_config
+SRC_C += main common file ident
 # generic C files
-SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64 elf_program_header_32 elf_program_header_64 packer_32 packer_64
+SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64 elf_program_header_32 elf_program_header_64 packer_32 packer_64 packer_config_32 packer_config_64
 SRC_ASM += payload_64 payload_32
 
 HEADERS += include/woody_woodpacker.h
@@ -106,6 +106,14 @@ $(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS) Makefile # TODO Update from 6
 	-D _32BITS
 
 $(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D _64BITS
+
+$(OBJDIR)/packer_config_32.o: packer_config.c $(HEADERS) $(LIBS) Makefile # TODO Update from 64
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
+	-D _32BITS
+
+$(OBJDIR)/packer_config_64.o: packer_config.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
 	-D _64BITS
 

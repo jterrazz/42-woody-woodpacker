@@ -71,7 +71,8 @@ extern u64 _payload_size_64;
 int start_packer(STREAM *file);
 
 int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
-int config_packer_for_last_load(STREAM *file, u8 elf_class, PACKER_CONFIG *packed_file);
+int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
+int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *packed_file);
 
 int create_packed_output_32(STREAM *file, u8 elf_class);
 int create_packed_output_64(STREAM *file, u8 elf_class);
@@ -90,7 +91,8 @@ int parse_shdr_32(STREAM *file);
 int parse_shdr_64(STREAM *file);
 int update_phdr_32(STREAM *output, PACKER_CONFIG *config);
 int update_phdr_64(STREAM *output, PACKER_CONFIG *config);
-int set_payload64(void *payload, PACKER_CONFIG *config);
+int set_payload_32(void *payload, PACKER_CONFIG *config);
+int set_payload_64(void *payload, PACKER_CONFIG *config);
 
 #ifdef _32BITS
 # define ARCH_PST(S) S ## _32

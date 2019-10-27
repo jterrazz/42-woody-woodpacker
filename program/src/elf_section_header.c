@@ -24,7 +24,7 @@ static struct section_header_type section_header_type[SECTION_HEADER_TYPE_N] = {
 	{ SHT_DYNSYM, "DYNSYM" },
 };
 
-int parse_shdr_generic(STREAM *file)
+int ARCH_PST(parse_shdr)(STREAM *file)
 {
 	ElfN_Ehdr *ehdr;
 	ElfN_Shdr *shdr;
@@ -67,7 +67,7 @@ int parse_shdr_generic(STREAM *file)
 	return 0;
 }
 
-int add_shdr_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
+int ARCH_PST(add_shdr)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 {
 	ElfN_Ehdr *elf_hdr;
 	ElfN_Ehdr *output_header;

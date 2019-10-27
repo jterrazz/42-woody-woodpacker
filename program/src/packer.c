@@ -2,12 +2,27 @@
 
 #include <elf.h>
 
+int ARCH_PST(set_payload)(void *payload, PACKER_CONFIG *config) // TODO Generic working version
+{
+	u32 *payload_end = payload + _payload_size_64;
+
+	if (_payload_size_64 < 3 * 8 + 4)
+		return -1;
+
+	*(payload_end - 7) = config->relative_jmp_new_pg;
+	*(payload_end - 6) = 0x000004e8;
+	*(payload_end - 4) = 0x17;
+	*(payload_end - 2) = 0;
+
+	return 0;
+}
+
 int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete class
 {
 	PACKER_CONFIG	config;
 	STREAM			*output;
 
-	if (config_packer_for_last_load(file, elf_class, &config))
+	if (ARCH_PST(config_packer_for_last_load)(file, &config))
 		return -1;
 
 	// TODO Will need to transform this to a simple mmap because compression will reduce size
@@ -18,7 +33,7 @@ int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete cl
 		ARCH_PST(insert_payload)(output, file, &config)
 		|| ARCH_PST(add_hdr_entry)(output, &config)
 		|| ARCH_PST(update_phdr)(output, &config)
-		|| add_shdr_64(output, file, &config)
+		|| ARCH_PST(add_shdr)(output, file, &config)
 		)
 		return -1;
 
@@ -26,13 +41,13 @@ int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete cl
 //		return -1;
 
 	void *payload = sread(output, config.new_startpoint_off, _payload_size_64); // TODO secure
-	set_payload64(payload, &config);
+	ARCH_PST(set_payload)(payload, &config);
 	sclose(output);
 	ft_printf("%s created 😱\n", OUTPUT_FILENAME);
 	return 0;
 }
 
-#ifndef _32BITS
+#ifndef _64BITS
 int start_packer(STREAM *file)
 {
 	struct e_ident	*ident_field;
