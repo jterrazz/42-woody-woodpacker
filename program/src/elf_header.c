@@ -2,7 +2,20 @@
 
 #include <elf.h>
 
-ElfN_Ehdr *parse_elf_header_generic(STREAM *file)
+int ARCH_PST(add_hdr_entry)(STREAM *output, PACKER_CONFIG *config)
+{
+	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
+	if (output_header == NULL)
+		return -1;
+
+	output_header->e_entry = config->new_startpoint_vaddr;
+	output_header->e_shnum += 1;
+	output_header->e_shstrndx += 1;
+
+	return 0;
+}
+
+ElfN_Ehdr *ARCH_PST(parse_elf_header)(STREAM *file)
 {
 	ElfN_Ehdr *header;
 

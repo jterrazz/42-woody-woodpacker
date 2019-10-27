@@ -39,15 +39,15 @@ int ARCH_PST(config_packer_for_last_load)(STREAM *file, PACKER_CONFIG *packed_fi
 		return -1;
 
 	// TODO Maybe do a generic function in s... that copy data giving the origin ptr, and comparing if data was moved in output
-	packed_file->phdr_selected_off = (void *)phdr - start;
-	packed_file->bss_to_add = phdr->p_memsz - phdr->p_filesz;
+	packed_file->insert_phdr_off = (void *)phdr - start;
+	packed_file->bss_len = phdr->p_memsz - phdr->p_filesz;
 	packed_file->payload_len_aligned = (ARCH_PST(_payload_size) + 63) & ~63;
-	packed_file->real_payload_len = packed_file->payload_len_aligned + packed_file->bss_to_add; // TODO Rename this bc its not the payload
-	packed_file->payload_file_off = phdr->p_offset + phdr->p_filesz;
+	packed_file->insert_len = packed_file->payload_len_aligned + packed_file->bss_len; // TODO Rename this bc its not the payload
+	packed_file->insert_off = phdr->p_offset + phdr->p_filesz;
 	packed_file->payload_mem_off = phdr->p_offset + phdr->p_memsz;
-	packed_file->payload_to_end_len = sfile_len(file) - packed_file->payload_file_off;
+	packed_file->insert_to_end_len = sfile_len(file) - packed_file->insert_off;
 	packed_file->new_startpoint_vaddr = phdr->p_memsz + phdr->p_vaddr;
-	packed_file->new_startpoint_off = packed_file->payload_file_off + packed_file->bss_to_add;
+	packed_file->payload_start_off = packed_file->insert_off + packed_file->bss_len;
 	packed_file->old_startpoint = ehdr->e_entry;
 
 	// TODO Probably better config this var

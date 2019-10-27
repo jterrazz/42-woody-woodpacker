@@ -50,15 +50,15 @@ struct e_ident *parse_ident(STREAM *file);
 
 typedef struct packer_config {
 	size_t output_len;
-	size_t phdr_selected_off;
+	size_t insert_phdr_off;
 	size_t payload_len_aligned;
-	size_t bss_to_add;
-	size_t real_payload_len;
-	size_t payload_file_off;
+	size_t bss_len;
+	size_t insert_len;
+	size_t insert_off;
 	size_t payload_mem_off;
-	size_t payload_to_end_len;
+	size_t insert_to_end_len;
 	size_t new_startpoint_vaddr;
-	size_t new_startpoint_off;
+	size_t payload_start_off;
 	size_t old_startpoint;
 	int relative_jmp_new_pg;
 } PACKER_CONFIG;
@@ -74,8 +74,8 @@ int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
 int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
 int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *packed_file);
 
-int create_packed_output_32(STREAM *file);
-int create_packed_output_64(STREAM *file);
+int create_packed_32(STREAM *file);
+int create_packed_64(STREAM *file);
 
 int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
 int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
@@ -85,14 +85,16 @@ Elf32_Ehdr *parse_elf_header_32(STREAM *file);
 Elf64_Ehdr *parse_elf_header_64(STREAM *file);
 Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
 Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
-void *phdr_append_data_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
-void *phdr_append_data_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
+
+int phdr_append_data_32(STREAM *output, PACKER_CONFIG *config);
+int phdr_append_data_64(STREAM *output, PACKER_CONFIG *config);
+void *p_append_data_64(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
+void *p_append_data_32(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
+
 int parse_shdr_32(STREAM *file);
 int parse_shdr_64(STREAM *file);
-int update_phdr_32(STREAM *output, PACKER_CONFIG *config);
-int update_phdr_64(STREAM *output, PACKER_CONFIG *config);
-int set_payload_32(void *payload, PACKER_CONFIG *config);
-int set_payload_64(void *payload, PACKER_CONFIG *config);
+int config_payload_32(STREAM *out, PACKER_CONFIG *config);
+int config_payload_64(STREAM *out, PACKER_CONFIG *config);
 
 #ifdef _32BITS
 # define ARCH_PST(S) S ## _32

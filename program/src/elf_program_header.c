@@ -3,6 +3,7 @@
 #include <elf.h>
 #include <stdlib.h>
 
+// TODO Maybe use unique function for parse phdr
 ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 {
 	ElfN_Ehdr *elf_hdr;
@@ -23,54 +24,41 @@ ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 	return last_load_phdr;
 }
 
-// TODO Reactor to append in phdr
-void *ARCH_PST(phdr_append_data)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
+/*
+ * - insert data at conf->insert_off for conf->insert_len bytes
+ * - data starts with a forced bss data set to zero
+ */
+void *ARCH_PST(p_append_data)(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len)
 {
-	void	*ori_start;
-	size_t	ori_len;
-	void	*output_bss;
+	void	*in_start;
+	void	*out_bss_addr;
 
-	ori_len = sfile_len(original);
-	if (!(ori_start = sread(original, 0, ori_len)))
+	if (!(in_start = sread(in, 0, sfile_len(in))))
 		return NULL;
-	if (swrite(output, ori_start , 0, config->payload_file_off))
+	if (swrite(out, in_start , 0, conf->insert_off))
 		return NULL;
-	if (swrite(output, ori_start + config->payload_file_off, config->payload_file_off + config->real_payload_len, config->payload_to_end_len))
+	if (swrite(out, in_start + conf->insert_off, conf->insert_off + conf->insert_len, conf->insert_to_end_len))
 		return NULL;
-	if (!(output_bss = sread(output, config->payload_file_off, config->bss_to_add)))
+	if (!(out_bss_addr = sread(out, conf->insert_off, conf->bss_len)))
 		return NULL;
-	ft_bzero(output_bss, config->bss_to_add);
+	ft_bzero(out_bss_addr, conf->bss_len);
 
-	if (swrite(output, ARCH_PST(&_payload), config->new_startpoint_off, ARCH_PST(_payload_size)))
+	if (swrite(out, src, conf->payload_start_off, src_len))
 		return NULL;
 
-	return sread(output, config->new_startpoint_off, ARCH_PST(_payload_size));
+	return sread(out, conf->payload_start_off, src_len);
 }
 
-int ARCH_PST(update_phdr)(STREAM *output, PACKER_CONFIG *config)
+int ARCH_PST(phdr_append_data)(STREAM *output, PACKER_CONFIG *config)
 {
-	ElfN_Phdr *output_last_load_header;
+	ElfN_Phdr *phdr;
 
-	if (!(output_last_load_header = sread(output, config->phdr_selected_off, sizeof(ElfN_Phdr))))
+	if (!(phdr = sread(output, config->insert_phdr_off, sizeof(ElfN_Phdr))))
 		return -1;
 
-	output_last_load_header->p_flags |= PF_X;
-	output_last_load_header->p_memsz += config->payload_len_aligned;
-	output_last_load_header->p_filesz += config->real_payload_len;
-
-	return 0;
-}
-
-// TODO Rename using offset and addr
-int ARCH_PST(add_hdr_entry)(STREAM *output, PACKER_CONFIG *config)
-{
-	ElfN_Ehdr *output_header = sread(output, 0, sizeof(ElfN_Ehdr));
-	if (output_header == NULL)
-		return -1;
-
-	output_header->e_entry = config->new_startpoint_vaddr;
-	output_header->e_shnum += 1;
-	output_header->e_shstrndx += 1;
+	phdr->p_flags |= PF_X;
+	phdr->p_memsz += config->payload_len_aligned;
+	phdr->p_filesz += config->insert_len;
 
 	return 0;
 }

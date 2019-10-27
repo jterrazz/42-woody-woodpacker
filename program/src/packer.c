@@ -2,22 +2,34 @@
 
 #include <elf.h>
 
-int ARCH_PST(set_payload)(void *payload, PACKER_CONFIG *config) // TODO Generic working version
+// TODO Probably need a better way to config the payload
+int ARCH_PST(config_payload)(STREAM *out, PACKER_CONFIG *config)
 {
-	u32 *payload_end = payload + _payload_size_64;
+	void	*payload;
+	u32		*payload_end;
 
-	if (_payload_size_64 < 3 * 8 + 4)
+#ifndef _64BITS
+	u8 mul = 1;
+#else
+	u8 mul = 2;
+#endif
+
+	if (!(payload = sread(out, config->payload_start_off, ARCH_PST(_payload_size))))
+		return -1;
+	payload_end = payload + _payload_size_64;
+
+	if (_payload_size_64 < 3 * 4 * mul + 4)
 		return -1;
 
-	*(payload_end - 7) = config->relative_jmp_new_pg;
-	*(payload_end - 6) = 0x000004e8;
-	*(payload_end - 4) = 0x17;
-	*(payload_end - 2) = 0;
+	*(payload_end - 3 * mul - 1) = config->relative_jmp_new_pg;
+	*(payload_end - 3 * mul) = 0x000004e8;
+	*(payload_end - 2 * mul) = 0x17;
+	*(payload_end - 1 * mul) = 0;
 
 	return 0;
 }
 
-int ARCH_PST(create_packed_output)(STREAM *file)
+int ARCH_PST(create_packed)(STREAM *file)
 {
 	PACKER_CONFIG	config;
 	STREAM			*output;
@@ -30,18 +42,15 @@ int ARCH_PST(create_packed_output)(STREAM *file)
 		return -1;
 
 	if (
-		!ARCH_PST(phdr_append_data)(output, file, &config)
+		!ARCH_PST(p_append_data)(output, file, &config, ARCH_PST(&_payload), ARCH_PST(_payload_size))
 		|| ARCH_PST(add_hdr_entry)(output, &config)
-		|| ARCH_PST(update_phdr)(output, &config)
+		|| ARCH_PST(phdr_append_data)(output, &config)
 		|| ARCH_PST(add_shdr)(output, file, &config)
+//		|| encrypt_old_phdrs(output, &config)
+		|| ARCH_PST(config_payload)(output, &config)
 		)
 		return -1;
 
-//	if (encrypt_old_phdrs(output, &config))
-//		return -1;
-
-	void *payload = sread(output, config.new_startpoint_off, _payload_size_64); // TODO secure + generic
-	ARCH_PST(set_payload)(payload, &config);
 	sclose(output);
 	return 0;
 }
@@ -57,12 +66,12 @@ int start_packer(STREAM *file)
 	if (ident_field->class == ELFCLASS32) {
 		if (!parse_elf_header_32(file) || parse_shdr_32(file))
 			return -1;
-		if (create_packed_output_32(file))
+		if (create_packed_32(file))
 			return -1;
 	} else if (ident_field->class == ELFCLASS64) {
 		if (!parse_elf_header_64(file) || parse_shdr_64(file))
 			return -1;
-		if (create_packed_output_64(file))
+		if (create_packed_64(file))
 			return -1;
 	} else {
 		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");

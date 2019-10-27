@@ -79,8 +79,8 @@ int ARCH_PST(add_shdr)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 
 	u64 sh_offset = elf_hdr->e_shoff;
 
-	if (sh_offset > config->payload_file_off) // TODO Use insted at returned in main
-		sh_offset += config->real_payload_len;
+	if (sh_offset > config->insert_off) // TODO Use insted at returned in main
+		sh_offset += config->insert_len;
 	output_header->e_shoff = sh_offset;
 
 	ElfN_Shdr *output_sh = sread(output, sh_offset, sizeof(ElfN_Shdr) * output_header->e_shnum);
@@ -93,10 +93,10 @@ int ARCH_PST(add_shdr)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 
 	void *new_shdr_addr = 0;
 	for (u16 i = 0; i < elf_hdr->e_shnum ; i++) {
-		if (output_sh->sh_offset > config->payload_file_off) {
+		if (output_sh->sh_offset > config->insert_off) {
 			if (!new_shdr_addr)
 				new_shdr_addr = output_sh;
-			output_sh->sh_offset += config->real_payload_len;
+			output_sh->sh_offset += config->insert_len;
 		}
 		output_sh++;
 	}
@@ -108,7 +108,7 @@ int ARCH_PST(add_shdr)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 	new_shdr_addr -= sizeof(ElfN_Shdr); // TODO Only do that if the last segment was a BSS and had empty space
 	ElfN_Shdr *prev_sh = new_shdr_addr - sizeof(ElfN_Shdr) ;
 
-	((ElfN_Shdr *)new_shdr_addr)->sh_offset += config->real_payload_len;
+	((ElfN_Shdr *)new_shdr_addr)->sh_offset += config->insert_len;
 
 	u64 new_sh_offset = new_shdr_addr - (void *)output_header;
 	u64 end_output_to_move_size = sfile_len(output) - new_sh_offset - sizeof(ElfN_Shdr);
@@ -119,8 +119,8 @@ int ARCH_PST(add_shdr)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 	new_sh->sh_name = 0;
 	new_sh->sh_type = SHT_PROGBITS;
 	new_sh->sh_flags = SHF_EXECINSTR | SHF_ALLOC;
-	new_sh->sh_offset = config->new_startpoint_off;
-	new_sh->sh_addr = prev_sh->sh_addr + (config->new_startpoint_off - prev_sh->sh_offset);
+	new_sh->sh_offset = config->payload_start_off;
+	new_sh->sh_addr = prev_sh->sh_addr + (config->payload_start_off - prev_sh->sh_offset);
 	new_sh->sh_size = config->payload_len_aligned;
 	new_sh->sh_link = 0;
 	new_sh->sh_info =  0;
@@ -168,7 +168,7 @@ int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config)
 			char *ptr = (char *)elf_hdr + shdr->sh_addr;
 			u64 end = (char *)elf_hdr + shdr->sh_addr + shdr->sh_size;
 
-			size_t safe_zone_start = (char *)elf_hdr + config->payload_file_off;
+			size_t safe_zone_start = (char *)elf_hdr + config->insert_off;
 			size_t safe_zone_end = safe_zone_start + config->payload_len_aligned;
 
 			// TODO Secure
