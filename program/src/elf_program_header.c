@@ -24,7 +24,7 @@ ElfN_Phdr *ARCH_PST(get_last_load_phdr)(STREAM *file)
 }
 
 // TODO Reactor to append in phdr
-int ARCH_PST(insert_payload)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
+void *ARCH_PST(phdr_append_data)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 {
 	void	*ori_start;
 	size_t	ori_len;
@@ -32,19 +32,19 @@ int ARCH_PST(insert_payload)(STREAM *output, STREAM *original, PACKER_CONFIG *co
 
 	ori_len = sfile_len(original);
 	if (!(ori_start = sread(original, 0, ori_len)))
-		return -1;
+		return NULL;
 	if (swrite(output, ori_start , 0, config->payload_file_off))
-		return -1;
+		return NULL;
 	if (swrite(output, ori_start + config->payload_file_off, config->payload_file_off + config->real_payload_len, config->payload_to_end_len))
-		return -1;
+		return NULL;
 	if (!(output_bss = sread(output, config->payload_file_off, config->bss_to_add)))
-		return -1;
+		return NULL;
 	ft_bzero(output_bss, config->bss_to_add);
 
 	if (swrite(output, ARCH_PST(&_payload), config->new_startpoint_off, ARCH_PST(_payload_size)))
-		return -1;
+		return NULL;
 
-	return 0;
+	return sread(output, config->new_startpoint_off, ARCH_PST(_payload_size));
 }
 
 int ARCH_PST(update_phdr)(STREAM *output, PACKER_CONFIG *config)

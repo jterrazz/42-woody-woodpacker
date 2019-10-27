@@ -17,7 +17,7 @@ int ARCH_PST(set_payload)(void *payload, PACKER_CONFIG *config) // TODO Generic 
 	return 0;
 }
 
-int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete class
+int ARCH_PST(create_packed_output)(STREAM *file)
 {
 	PACKER_CONFIG	config;
 	STREAM			*output;
@@ -30,7 +30,7 @@ int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete cl
 		return -1;
 
 	if (
-		ARCH_PST(insert_payload)(output, file, &config)
+		!ARCH_PST(phdr_append_data)(output, file, &config)
 		|| ARCH_PST(add_hdr_entry)(output, &config)
 		|| ARCH_PST(update_phdr)(output, &config)
 		|| ARCH_PST(add_shdr)(output, file, &config)
@@ -40,10 +40,9 @@ int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete cl
 //	if (encrypt_old_phdrs(output, &config))
 //		return -1;
 
-	void *payload = sread(output, config.new_startpoint_off, _payload_size_64); // TODO secure
+	void *payload = sread(output, config.new_startpoint_off, _payload_size_64); // TODO secure + generic
 	ARCH_PST(set_payload)(payload, &config);
 	sclose(output);
-	ft_printf("%s created 😱\n", OUTPUT_FILENAME);
 	return 0;
 }
 
@@ -51,30 +50,26 @@ int ARCH_PST(create_packed_output)(STREAM *file, u8 elf_class) // TODO Delete cl
 int start_packer(STREAM *file)
 {
 	struct e_ident	*ident_field;
-	void			*ehdr;
 
 	if (!(ident_field = parse_ident(file)))
 	    return -1;
 
 	if (ident_field->class == ELFCLASS32) {
-		if (!(ehdr = parse_elf_header_32(file)))
+		if (!parse_elf_header_32(file) || parse_shdr_32(file))
 			return -1;
-		if (parse_shdr_32(file))
-			return -1;
-		if (create_packed_output_32(file, ELFCLASS32))
+		if (create_packed_output_32(file))
 			return -1;
 	} else if (ident_field->class == ELFCLASS64) {
-		if (!(ehdr = parse_elf_header_32(file)))
+		if (!parse_elf_header_64(file) || parse_shdr_64(file))
 			return -1;
-		if (parse_shdr_64(file))
-			return -1;
-		if (create_packed_output_64(file, ELFCLASS64))
+		if (create_packed_output_64(file))
 			return -1;
 	} else {
 		ft_dprintf(STDERR_FILENO, "Bad ELF class.\n");
 		return -1;
 	}
 
+	ft_printf("%s created 😱\n", OUTPUT_FILENAME);
 	return 0;
 }
 #endif

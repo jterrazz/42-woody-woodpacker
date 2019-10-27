@@ -74,8 +74,8 @@ int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
 int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
 int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *packed_file);
 
-int create_packed_output_32(STREAM *file, u8 elf_class);
-int create_packed_output_64(STREAM *file, u8 elf_class);
+int create_packed_output_32(STREAM *file);
+int create_packed_output_64(STREAM *file);
 
 int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
 int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
@@ -85,8 +85,8 @@ Elf32_Ehdr *parse_elf_header_32(STREAM *file);
 Elf64_Ehdr *parse_elf_header_64(STREAM *file);
 Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
 Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
-int insert_payload_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
-int insert_payload_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
+void *phdr_append_data_64(STREAM *output, STREAM *original, PACKER_CONFIG *config);
+void *phdr_append_data_32(STREAM *output, STREAM *original, PACKER_CONFIG *config);
 int parse_shdr_32(STREAM *file);
 int parse_shdr_64(STREAM *file);
 int update_phdr_32(STREAM *output, PACKER_CONFIG *config);

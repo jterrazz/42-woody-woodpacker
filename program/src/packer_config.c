@@ -6,12 +6,11 @@
  * STATIC METHODS
  */
 
-// TODO Generic
 static size_t ARCH_PST(get_packed_len)(STREAM *file, size_t *ret_len)
 {
 	Elf64_Phdr *phdr;
 
-	if (!(phdr = get_last_load_phdr_64(file)))
+	if (!(phdr = ARCH_PST(get_last_load_phdr)(file)))
 		return -1;
 
 	size_t aligned_payload64_len = (ARCH_PST(_payload_size) + 63) & ~63;
@@ -22,7 +21,10 @@ static size_t ARCH_PST(get_packed_len)(STREAM *file, size_t *ret_len)
 	return 0;
 }
 
-// TODO Generic
+/*
+ * PUBLIC METHODS
+ */
+
 int ARCH_PST(config_packer_for_last_load)(STREAM *file, PACKER_CONFIG *packed_file)
 {
 	ElfN_Phdr *phdr;
@@ -43,9 +45,9 @@ int ARCH_PST(config_packer_for_last_load)(STREAM *file, PACKER_CONFIG *packed_fi
 	packed_file->real_payload_len = packed_file->payload_len_aligned + packed_file->bss_to_add; // TODO Rename this bc its not the payload
 	packed_file->payload_file_off = phdr->p_offset + phdr->p_filesz;
 	packed_file->payload_mem_off = phdr->p_offset + phdr->p_memsz;
-	packed_file->payload_to_end_len = sfile_len(file) - packed_file->payload_file_off; // TODO Maybe do mem/file too
+	packed_file->payload_to_end_len = sfile_len(file) - packed_file->payload_file_off;
 	packed_file->new_startpoint_vaddr = phdr->p_memsz + phdr->p_vaddr;
-	packed_file->new_startpoint_off = packed_file->payload_file_off + packed_file->bss_to_add; // TODO Maybe do mem/file too
+	packed_file->new_startpoint_off = packed_file->payload_file_off + packed_file->bss_to_add;
 	packed_file->old_startpoint = ehdr->e_entry;
 
 	// TODO Probably better config this var
