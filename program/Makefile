@@ -28,19 +28,19 @@ endif
 ###########################
 
 OBJDIR = obj
-
 VPATH += src
+
 # common C files
-SRC_C += main common file ident
+SRC_C += main helper/file ident
 # generic C files
-SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64 elf_program_header_32 elf_program_header_64 packer_32 packer_64 packer_config_32 packer_config_64
-SRC_ASM += payload_64 payload_32
+SRC_C += elf/ehdr_32 elf/ehdr_64 elf/shdr_32 elf/shdr_64 elf/phdr_32 elf/phdr_64 packer_32 packer_64 packer_config_32 packer_config_64
+SRC_ASM += payload/entry_64 payload/entry_32
 
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a
 
-OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
-OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))
+OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_C))))
+OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_ASM))))
 
 ###########################
 #          RULES          #
@@ -50,64 +50,62 @@ OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)
 
 all: libft $(NAME)
 
-# link
-
+# Link objects and creates executable
 $(NAME): $(OBJ_C) $(OBJ_ASM)
 	$(CC) -Wl,--gc-sections $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-# C files
-
-$(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) Makefile
+# Compile C files
+$(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS)
+	mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
 # generic C files section:
+define CC-32
+mkdir -p $(dir $@)
+$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
+endef
 
-$(OBJDIR)/elf_header_32.o: elf_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
+define CC-64
+mkdir -p $(dir $@)
+$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
+endef
 
-$(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
+$(OBJDIR)/elf/ehdr_32.o: elf/ehdr.c $(HEADERS) $(LIBS)
+	$(CC-32)
+$(OBJDIR)/elf/ehdr_64.o: elf/ehdr.c $(HEADERS) $(LIBS)
+	$(CC-64)
+$(OBJDIR)/elf/shdr_32.o: elf/shdr.c $(HEADERS) $(LIBS)
+	$(CC-32)
+$(OBJDIR)/elf/shdr_64.o: elf/shdr.c $(HEADERS) $(LIBS)
+	$(CC-64)
+$(OBJDIR)/elf/phdr_32.o: elf/phdr.c $(HEADERS) $(LIBS)
+	$(CC-32)
+$(OBJDIR)/elf/phdr_64.o: elf/phdr.c $(HEADERS) $(LIBS)
+	$(CC-64)
+$(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS)
+	$(CC-32)
+$(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS)
+	$(CC-64)
+$(OBJDIR)/packer_config_32.o: packer_config.c $(HEADERS) $(LIBS)
+	$(CC-32)
+$(OBJDIR)/packer_config_64.o: packer_config.c $(HEADERS) $(LIBS)
+	$(CC-64)
 
-$(OBJDIR)/elf_section_header_32.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
-
-$(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
-
-$(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
-
-$(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
-
-$(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
-
-$(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
-
-$(OBJDIR)/packer_config_32.o: packer_config.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
-
-$(OBJDIR)/packer_config_64.o: packer_config.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
-
-# asm files
-
+# Compile ASM files
 $(OBJDIR)/%.o: %.asm $(LIBS) Makefile
+	mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $<
 
-# other targets
+# Other targets
 
 clean:
 	make -C libft_ng clean
-	rm -vf $(OBJ_C) $(OBJ_ASM)
+	rm -vrf $(OBJDIR)
 
 fclean:
 	make -C libft_ng fclean
-	rm -vf $(OBJ_C) $(OBJ_ASM)
+	rm -vrf $(OBJDIR)
 	rm -vf $(NAME)
-	rm -f tmpwoody
 
 re: fclean all
 
