@@ -26,8 +26,10 @@ int		swrite(STREAM *ctx, void *content, size_t offset, size_t len);
 size_t	sfile_len(STREAM *ctx);
 int		sclose(STREAM *ctx);
 
-
-
+/*
+ * ident.c
+ * Identify binary files
+ */
 
 struct e_ident {
 	char magic[4];
@@ -42,8 +44,8 @@ struct e_ident {
 struct e_ident *parse_ident(STREAM *file);
 
 /*
- * elf.c
- * Elf toolkit
+ * packer.c
+ * Add a custom payload to binaries that will execute first
  */
 
 #define OUTPUT_FILENAME "./woody"
@@ -63,40 +65,63 @@ typedef struct packer_config {
 	int relative_jmp_new_pg;
 } PACKER_CONFIG;
 
+int start_packer(STREAM *file);
+int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
+int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *conf);
+int create_packed_32(STREAM *file);
+int create_packed_64(STREAM *file);
+
+/*
+ * Packer payload
+ */
+
 extern u8 _payload_32;
 extern u8 _payload_64;
 extern u64 _payload_size_32;
 extern u64 _payload_size_64;
 
-int start_packer(STREAM *file);
-
-int encrypt_shdrs_32(STREAM *output, PACKER_CONFIG *config);
-int encrypt_shdrs_64(STREAM *output, PACKER_CONFIG *config);
-int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
-int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *conf);
-
-int create_packed_32(STREAM *file);
-int create_packed_64(STREAM *file);
-
-int ehdr_packed_config_64(STREAM *output, PACKER_CONFIG *config);
-int ehdr_packed_config_32(STREAM *output, PACKER_CONFIG *config);
-int add_shdr_64(STREAM *file, PACKER_CONFIG *conf);
-int add_shdr_32(STREAM *file, PACKER_CONFIG *config);
-Elf32_Ehdr *parse_ehdr_32(STREAM *file);
-Elf64_Ehdr *parse_ehdr_64(STREAM *file);
-Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
-Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
-
-int phdr_append_data_32(STREAM *output, PACKER_CONFIG *config);
-int phdr_append_data_64(STREAM *output, PACKER_CONFIG *config);
-void *p_append_data_64(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
-void *p_append_data_32(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
-
-int parse_shdr_32(STREAM *file, void(*ft)(Elf32_Ehdr *ehdr, Elf32_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
-int parse_shdr_64(STREAM *file, void(*ft)(Elf64_Ehdr *ehdr, Elf64_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
 int config_payload_32(STREAM *out, PACKER_CONFIG *config);
 int config_payload_64(STREAM *out, PACKER_CONFIG *config);
 
+/*
+ * ehdr.c
+ * ELF Header related methods
+ */
+
+Elf32_Ehdr *parse_ehdr_32(STREAM *file);
+Elf64_Ehdr *parse_ehdr_64(STREAM *file);
+int ehdr_packed_config_64(STREAM *output, PACKER_CONFIG *config);
+int ehdr_packed_config_32(STREAM *output, PACKER_CONFIG *config);
+
+/*
+ * shdr.c
+ * ELF Section header related methods
+ */
+
+int encrypt_shdrs_32(STREAM *output, PACKER_CONFIG *config);
+int encrypt_shdrs_64(STREAM *output, PACKER_CONFIG *config);
+int add_shdr_64(STREAM *file, PACKER_CONFIG *conf);
+int add_shdr_32(STREAM *file, PACKER_CONFIG *config);
+int parse_shdr_32(STREAM *file, void(*ft)(Elf32_Ehdr *ehdr, Elf32_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
+int parse_shdr_64(STREAM *file, void(*ft)(Elf64_Ehdr *ehdr, Elf64_Shdr *shdr, PACKER_CONFIG *config), PACKER_CONFIG *config);
+
+/*
+ * phdr.c
+ * ELF Program header related methods
+ */
+
+int phdr_append_data_32(STREAM *output, PACKER_CONFIG *config);
+int phdr_append_data_64(STREAM *output, PACKER_CONFIG *config);
+Elf32_Phdr *get_last_load_phdr_32(STREAM *file);
+Elf64_Phdr *get_last_load_phdr_64(STREAM *file);
+void *p_append_data_64(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
+void *p_append_data_32(STREAM *out, STREAM *in, PACKER_CONFIG *conf, void *src, size_t src_len);
+
+/*
+ * Defines
+ */
+
+// Support for 32/64 bits with the same codebase
 #ifdef _32BITS
 # define ARCH_PST(S) S ## _32
 # define ElfN_Ehdr Elf32_Ehdr
@@ -111,24 +136,24 @@ int config_payload_64(STREAM *out, PACKER_CONFIG *config);
 # define ElfN_Off Elf64_Off
 #endif
 
+// Silence all outputs
 #ifdef SILENT
 # define ft_printf(...) {}
 # define ft_dprintf(...) {}
 # define perror(...) {}
 #endif
 
+// Log all operations
 #ifdef DEBUG
 # define FT_DEBUG(f_, ...) ft_printf((f_), ##__VA_ARGS__)
 #else
 # define FT_DEBUG(...) {}
 #endif
 
-/*
- * Removes forbidden functions for the 42 school
- */
+// Removes forbidden functions for the 42 school
 #ifdef _42_
-#define unlink(...) {}
-#define assert(...) {}
+# define unlink(...) {}
+# define assert(...) {}
 #endif
 
 #endif

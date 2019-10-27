@@ -51,71 +51,34 @@ $(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) Makefile
 # generic C files section:
 
 $(OBJDIR)/elf_header_32.o: elf_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D parse_elf_header_generic=parse_elf_header_32 \
-	-D ElfN_Addr=Elf32_Addr \
-	-D ElfN_Off=Elf32_Off \
-	-D _32BITS
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
 
 $(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D parse_elf_header_generic=parse_elf_header_64 \
-	-D ElfN_Addr=Elf64_Addr \
-	-D ElfN_Off=Elf64_Off \
-	-D _64BITS
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
 
 $(OBJDIR)/elf_section_header_32.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D parse_shdr_generic=parse_shdr_32 \
-	-D ElfN_Addr=Elf32_Addr \
-	-D ElfN_Off=Elf32_Off \
-	-D ElfN_Shdr=Elf32_Shdr \
-	-D _32BITS
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
 
 $(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D parse_shdr_generic=parse_shdr_64 \
-	-D add_shdr_generic=add_shdr_64 \
-	-D ElfN_Addr=Elf64_Addr \
-	-D ElfN_Off=Elf64_Off \
-	-D ElfN_Shdr=Elf64_Shdr \
-	-D _64BITS
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
 
-$(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile # TODO Update from 64
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D dump_program_header_generic=dump_program_header_32 \
-	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D ElfN_Off=Elf32_Off \
-	-D ElfN_Phdr=Elf32_Phdr \
-	-D ElfN_Shdr=Elf32_Shdr \
-	-D _32BITS
+$(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
 
-$(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D dump_program_header_generic=dump_program_header_64 \
-	-D get_last_load_phdr_generic=get_last_load_phdr_64 \
-	-D add_hdr_entry_generic=add_hdr_entry_64 \
-	-D _64BITS
+$(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
 
-$(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS) Makefile # TODO Update from 64
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D _32BITS
+$(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
 
-$(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D _64BITS
+$(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
 
-$(OBJDIR)/packer_config_32.o: packer_config.c $(HEADERS) $(LIBS) Makefile # TODO Update from 64
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D _32BITS
+$(OBJDIR)/packer_config_32.o: packer_config.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
 
-$(OBJDIR)/packer_config_64.o: packer_config.c $(HEADERS) $(LIBS) Makefile # TODO Try finding more generic opt
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D _64BITS
+$(OBJDIR)/packer_config_64.o: packer_config.c $(HEADERS) $(LIBS) Makefile
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
 
 # asm files
 
