@@ -41,24 +41,22 @@ ElfN_Phdr *get_last_load_phdr_generic(STREAM *file)
 }
 
 // TODO Reactor to append in phdr
-int insert_payload_generic(STREAM *output, STREAM *original, PACKER_CONFIG *config)
+int ARCH_PST(insert_payload)(STREAM *output, STREAM *original, PACKER_CONFIG *config)
 {
-	void *ori_start;
-	size_t ori_len;
+	void	*ori_start;
+	size_t	ori_len;
+	void	*output_bss;
 
 	ori_len = sfile_len(original);
-	ori_start = sread(original, 0, ori_len); // TODO secure
-
-	if (swrite(output, ori_start , 0, config->payload_file_off)) // TODO Could do a smove feature
+	if (!(ori_start = sread(original, 0, ori_len)))
+		return -1;
+	if (swrite(output, ori_start , 0, config->payload_file_off))
 		return -1;
 	if (swrite(output, ori_start + config->payload_file_off, config->payload_file_off + config->real_payload_len, config->payload_to_end_len))
 		return -1;
-
-	void *bss_section = sread(output, config->payload_file_off, config->bss_to_add);
-	if (!bss_section)
+	if (!(output_bss = sread(output, config->payload_file_off, config->bss_to_add)))
 		return -1;
-
-	ft_bzero(bss_section, config->bss_to_add);
+	ft_bzero(output_bss, config->bss_to_add);
 	if (swrite(output, &_payload64, config->new_startpoint_off, _payload64_size))
 		return -1;
 

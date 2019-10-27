@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 	if (!(file = sopen(argv[1], 0, S_RDONLY))) {
 		return EXIT_FAILURE;
 	}
-	read_elf(file);
+	start_packer(file);
 	sclose(file);
 	return 0;
 }

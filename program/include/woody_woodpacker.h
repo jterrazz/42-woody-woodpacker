@@ -21,18 +21,35 @@ typedef unsigned long long u64;
 typedef struct stream STREAM;
 
 STREAM	*sopen(const char *filename, size_t file_len, int oflag);
-int		sclose(STREAM *ctx);
 void	*sread(STREAM *ctx, size_t offset, size_t len);
 int		swrite(STREAM *ctx, void *content, size_t offset, size_t len);
 size_t	sfile_len(STREAM *ctx);
+int		sclose(STREAM *ctx);
+
+
+
+
+struct e_ident {
+	char magic[4];
+	u8 class;
+	u8 endian;
+	u8 version;
+	u8 os_abi;
+	u8 version_abi;
+	u8 pad[7];
+} __attribute__((packed));
+
+struct e_ident *parse_ident(STREAM *file);
 
 /*
  * elf.c
  * Elf toolkit
  */
+
 #define OUTPUT_FILENAME "./woody"
 
 typedef struct packer_config {
+	size_t output_len;
 	size_t phdr_selected_off;
 	size_t payload_len_aligned;
 	size_t bss_to_add;
@@ -49,9 +66,10 @@ typedef struct packer_config {
 extern u8 _payload64;
 extern u64 _payload64_size;
 
-int read_elf(STREAM *file);
+int start_packer(STREAM *file);
 
 int encrypt_old_phdrs(STREAM *output, PACKER_CONFIG *config);
+int config_packer_for_last_load(STREAM *file, u8 elf_class, PACKER_CONFIG *packed_file);
 
 int add_hdr_entry_64(STREAM *output, PACKER_CONFIG *config);
 int add_hdr_entry_32(STREAM *output, PACKER_CONFIG *config);
@@ -69,16 +87,11 @@ int update_phdr_32(STREAM *output, PACKER_CONFIG *config);
 int update_phdr_64(STREAM *output, PACKER_CONFIG *config);
 int set_payload64(void *payload, PACKER_CONFIG *config);
 
-/*
- * common.c
- * Basic tools
- */
-void perror_and_exit(const char *err);
-
-u8 *secure_read(u8 *mem,
-		size_t mem_len,
-		size_t offset,
-		size_t len_to_read);
+#ifdef _32BITS
+#define ARCH_PST(S) S ## _32
+#else
+#define ARCH_PST(S) S ## _64
+#endif
 
 #ifdef SILENT
 # define ft_printf(...) {}
@@ -91,11 +104,13 @@ u8 *secure_read(u8 *mem,
 #else
 # define FT_DEBUG(...) {}
 #endif
+
 /*
- * Avoid linking of forbidden functions in 42
+ * Removes forbidden functions for the 42 school
  */
 #ifdef _42_
 #define unlink(...) {}
+#define assert(...) {}
 #endif
 
 #endif
