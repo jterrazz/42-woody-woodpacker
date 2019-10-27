@@ -24,21 +24,26 @@ CFLAGS += -D _42_
 endif
 
 ###########################
-#         SOURCES         #
+#      SOURCES / OBJ      #
 ###########################
 
 OBJDIR = obj
 VPATH += src
 
-# common C files
+# SOURCES
+# support 32/64 bits parsing functions
+
 SRC_C += main helper/file ident
-# generic C files
-SRC_C += elf/ehdr_32 elf/ehdr_64 elf/shdr_32 elf/shdr_64 elf/phdr_32 elf/phdr_64 packer_32 packer_64 packer_config_32 packer_config_64
-SRC_ASM += payload/entry_64 payload/entry_32
+ARCH_SRC_C = elf/ehdr elf/shdr elf/phdr packer packer_config
 
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a
 
+SRC_ASM += payload/entry_64 payload/entry_32
+
+# OBJECTS
+
+SRC_C += $(addsuffix __32, $(ARCH_SRC_C)) $(addsuffix __64, $(ARCH_SRC_C))
 OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_C))))
 OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_ASM))))
 
@@ -50,49 +55,30 @@ OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_ASM))))
 
 all: libft $(NAME)
 
-# Link objects and creates executable
+# Link objects and create executable
+
 $(NAME): $(OBJ_C) $(OBJ_ASM)
 	$(CC) -Wl,--gc-sections $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 # Compile C files
+
 $(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS)
 	mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
-# generic C files section:
-define CC-32
-mkdir -p $(dir $@)
-$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _32BITS
-endef
+# Support for 32/64 bits
 
-define CC-64
-mkdir -p $(dir $@)
-$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< -D _64BITS
-endef
+$(OBJDIR)/%__32.o: $(subst $(OBJDIR),$(VPATH),$(@:__32.o=.c))
+	mkdir -p $(dir $@)
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $(subst $(OBJDIR),$(VPATH),$(@:__32.o=.c)) -D _32BITS
 
-$(OBJDIR)/elf/ehdr_32.o: elf/ehdr.c $(HEADERS) $(LIBS)
-	$(CC-32)
-$(OBJDIR)/elf/ehdr_64.o: elf/ehdr.c $(HEADERS) $(LIBS)
-	$(CC-64)
-$(OBJDIR)/elf/shdr_32.o: elf/shdr.c $(HEADERS) $(LIBS)
-	$(CC-32)
-$(OBJDIR)/elf/shdr_64.o: elf/shdr.c $(HEADERS) $(LIBS)
-	$(CC-64)
-$(OBJDIR)/elf/phdr_32.o: elf/phdr.c $(HEADERS) $(LIBS)
-	$(CC-32)
-$(OBJDIR)/elf/phdr_64.o: elf/phdr.c $(HEADERS) $(LIBS)
-	$(CC-64)
-$(OBJDIR)/packer_32.o: packer.c $(HEADERS) $(LIBS)
-	$(CC-32)
-$(OBJDIR)/packer_64.o: packer.c $(HEADERS) $(LIBS)
-	$(CC-64)
-$(OBJDIR)/packer_config_32.o: packer_config.c $(HEADERS) $(LIBS)
-	$(CC-32)
-$(OBJDIR)/packer_config_64.o: packer_config.c $(HEADERS) $(LIBS)
-	$(CC-64)
+$(OBJDIR)/%__64.o: $(subst $(OBJDIR),$(VPATH),$(@:__64.o=.c))
+	mkdir -p $(dir $@)
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $(subst $(OBJDIR),$(VPATH),$(@:__64.o=.c)) -D _64BITS
 
 # Compile ASM files
-$(OBJDIR)/%.o: %.asm $(LIBS) Makefile
+
+$(OBJDIR)/%.o: %.asm $(LIBS)
 	mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $<
 
