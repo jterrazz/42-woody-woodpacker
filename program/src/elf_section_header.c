@@ -87,6 +87,7 @@ int ARCH_PST(add_shdr)(STREAM *file, PACKER_CONFIG *conf)
 // TODO Maybe secure the moves
 static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONFIG *config)
 {
+	// TODO Maybe more sections ?
 	if (shdr->sh_type == SHT_PROGBITS && shdr->sh_flags & SHF_ALLOC && shdr->sh_flags & SHF_EXECINSTR) {
 		if (!shdr->sh_addr)
 			return;
@@ -109,7 +110,6 @@ static void ARCH_PST(encrypt_shdr)(ElfN_Ehdr *ehdr, ElfN_Shdr *shdr, PACKER_CONF
 int ARCH_PST(encrypt_shdrs)(STREAM *file, PACKER_CONFIG *config)
 {
 	parse_shdr_64(file, &ARCH_PST(encrypt_shdr), config);
-	// TODO Maybe more sections ?
 	return 0;
 }
 
@@ -127,7 +127,7 @@ int ARCH_PST(parse_shdr)(STREAM *file, void(*ft)(ElfN_Ehdr *ehdr, ElfN_Shdr *shd
 
 	if (ehdr->e_shoff == 0) {
 		ft_printf("No section header found !");
-		return 0;
+		return -1; // TODO Can we infect a file without a shdr ?
 	}
 
 	if (!(shdr = sread(file, ehdr->e_shoff, ehdr->e_shentsize * ehdr->e_shnum))) {

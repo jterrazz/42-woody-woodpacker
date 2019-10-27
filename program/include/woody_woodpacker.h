@@ -73,7 +73,7 @@ int start_packer(STREAM *file);
 int encrypt_shdrs_32(STREAM *output, PACKER_CONFIG *config);
 int encrypt_shdrs_64(STREAM *output, PACKER_CONFIG *config);
 int config_packer_for_last_load_32(STREAM *file, PACKER_CONFIG *packed_file);
-int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *packed_file);
+int config_packer_for_last_load_64(STREAM *file, PACKER_CONFIG *conf);
 
 int create_packed_32(STREAM *file);
 int create_packed_64(STREAM *file);
