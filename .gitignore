@@ -7,6 +7,7 @@ CMakeLists.txt
 .build/
 *.gch
 *.o
+program/obj
 program/test/*
 !program/test/simple.c
 
