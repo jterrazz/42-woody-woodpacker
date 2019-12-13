@@ -1,4 +1,4 @@
-NAME = sandbox
+NAME = encrypt
 CC = gcc
 AS = nasm
 
@@ -8,14 +8,14 @@ else
 CFLAGS = -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
 endif
 IFLAGS = -I./include
-ASFLAGS = -f elf64
+ASFLAGS = -f macho64
 
 VPATH = src
 OBJDIR	= obj
 
 SRC_C = main
-SRC_ASM = payloads
-HEADERS = include/woody_woodpacker.h
+SRC_ASM = rc4
+HEADERS =
 
 OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
 OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))

@@ -2,8 +2,12 @@ NAME = woody_woodpacker
 CC = gcc
 AS = nasm
 
+###########################
+#          FLAGS          #
+###########################
+
 ifeq ($(DEBUG),yes)
-CFLAGS = -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra
+CFLAGS = -g -O0 -fsanitize=address -std=gnu11 -Wall -Wextra -D DEBUG
 else
 CFLAGS = -Ofast -fno-omit-frame-pointer -march=native -std=gnu11 -Wall -Wextra
 endif
@@ -19,103 +23,75 @@ ifeq ($(_42_),yes)
 CFLAGS += -D _42_
 endif
 
-OBJDIR = obj
+###########################
+#      SOURCES / OBJ      #
+###########################
 
+OBJDIR = obj
 VPATH += src
-# common C files
-SRC_C += main common elf file
-# generic C files
-SRC_C += elf_header_32 elf_header_64 elf_section_header_32 elf_section_header_64 elf_program_header_32 elf_program_header_64
-SRC_ASM += payload_64 payload_32
+
+# SOURCES
+# support 32/64 bits parsing functions
+
+SRC_C += main helper/file ident
+ARCH_SRC_C = elf/ehdr elf/shdr elf/phdr packer packer_config
 
 HEADERS += include/woody_woodpacker.h
 LIBS += libft_ng/libft.a
 
-OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_C)))))
-OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC_ASM)))))
+SRC_ASM += payload/entry_64 payload/entry_32
+
+# OBJECTS
+
+SRC_C += $(addsuffix __32, $(ARCH_SRC_C)) $(addsuffix __64, $(ARCH_SRC_C))
+OBJ_C = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_C))))
+OBJ_ASM = $(addprefix $(OBJDIR)/, $(addsuffix .o, $(basename $(SRC_ASM))))
+
+###########################
+#          RULES          #
+###########################
 
 .PHONY: all re clean fclean help mrproper exec
 
 all: libft $(NAME)
 
-# link
+# Link objects and create executable
 
 $(NAME): $(OBJ_C) $(OBJ_ASM)
 	$(CC) -Wl,--gc-sections $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-# C files
+# Compile C files
 
-$(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) Makefile
+$(OBJDIR)/%.o: %.c $(HEADERS) $(LIBS) # TODO Doesnt update when .c changes
+	@mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $<
 
-# generic C files section:
+# Support for 32/64 bits
 
-$(OBJDIR)/elf_header_32.o: elf_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D parse_elf_header_generic=parse_elf_header_32 \
-	-D ElfN_Addr=Elf32_Addr \
-	-D ElfN_Off=Elf32_Off \
-	-D _32BITS
+$(OBJDIR)/%__32.o: $(subst $(OBJDIR),$(VPATH),$(@:__32.o=.c))
+	@mkdir -p $(dir $@)
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $(subst $(OBJDIR),$(VPATH),$(@:__32.o=.c)) -D _32BITS
 
-$(OBJDIR)/elf_header_64.o: elf_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D parse_elf_header_generic=parse_elf_header_64 \
-	-D ElfN_Addr=Elf64_Addr \
-	-D ElfN_Off=Elf64_Off \
-	-D _64BITS
+$(OBJDIR)/%__64.o: $(subst $(OBJDIR),$(VPATH),$(@:__64.o=.c))
+	@mkdir -p $(dir $@)
+	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $(subst $(OBJDIR),$(VPATH),$(@:__64.o=.c)) -D _64BITS
 
-$(OBJDIR)/elf_section_header_32.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D dump_section_header_generic=dump_section_header_32 \
-	-D ElfN_Addr=Elf32_Addr \
-	-D ElfN_Off=Elf32_Off \
-	-D ElfN_Shdr=Elf32_Shdr \
-	-D _32BITS
+# Compile ASM files
 
-$(OBJDIR)/elf_section_header_64.o: elf_section_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D dump_section_header_generic=dump_section_header_64 \
-	-D ElfN_Addr=Elf64_Addr \
-	-D ElfN_Off=Elf64_Off \
-	-D ElfN_Shdr=Elf64_Shdr \
-	-D _64BITS
-
-$(OBJDIR)/elf_program_header_32.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D dump_program_header_generic=dump_program_header_32 \
-	-D ElfN_Ehdr=Elf32_Ehdr \
-	-D ElfN_Off=Elf32_Off \
-	-D ElfN_Phdr=Elf32_Phdr \
-	-D _32BITS
-
-$(OBJDIR)/elf_program_header_64.o: elf_program_header.c $(HEADERS) $(LIBS) Makefile
-	$(CC) -c $(CFLAGS) $(IFLAGS) -o $@ $< \
-	-D dump_program_header_generic=dump_program_header_64 \
-	-D ElfN_Ehdr=Elf64_Ehdr \
-	-D ElfN_Off=Elf64_Off \
-	-D ElfN_Phdr=Elf64_Phdr \
-	-D _64BITS
-
-# asm files
-
-$(OBJDIR)/%.o: %.asm $(LIBS) Makefile
+$(OBJDIR)/%.o: %.asm $(LIBS)
+	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -o $@ $<
 
-# other targets
+# Other targets
 
 clean:
 	make -C libft_ng clean
-	rm -vf $(OBJ_C) $(OBJ_ASM)
+	rm -vrf $(OBJDIR)
 
 fclean:
 	make -C libft_ng fclean
-	rm -vf $(OBJ_C) $(OBJ_ASM)
+	rm -vrf $(OBJDIR)
 	rm -vf $(NAME)
-	rm -f tmpwoody
 
 re: fclean all
 

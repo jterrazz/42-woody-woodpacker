@@ -7,6 +7,9 @@ CMakeLists.txt
 .build/
 *.gch
 *.o
+program/obj
+program/test/*
+!program/test/simple.c
 
 # Binaries
 *.a.out
@@ -21,11 +24,12 @@ CMakeLists.txt
 
 # tmp files
 *~
+!.editor_config
 
 # expect self
 !.gitignore
 
 # main executable
 woody_woodpacker
+woody
 test
-tmpwoody

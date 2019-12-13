@@ -6,46 +6,58 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef SILENT
-#define perror(...) {}
-#endif
-
 struct stream {
     int fd;
     u8 *data;
     size_t len;
+    int oflag;
 };
 
 /*
  * Open a file and map it
+ * Flag can be one of S_RDONLY, S_WRONLY, S_RDWR
  */
-STREAM *sopen(const char *filename, size_t file_len)
+STREAM *sopen(const char *filename, size_t file_len, int oflag) // TODO Put len as facultative
 {
-	if (filename == NULL) {
-		return NULL;
-	}
+	int fd;
+	off_t off;
+	u8 *data;
 
-	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0755);
+	if (filename == NULL)
+		return NULL;
+
+	if (oflag & S_WRONLY)
+		fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0755);
+	else
+		fd = open(filename, O_RDONLY);
+
 	if (fd < 0) {
 		perror("open");
 		return NULL;
 	}
 
-	for (size_t i = 0; i < file_len; i++) {
-		int ret = write(fd, "\0", 1);
-		if (ret < 0) {
-			perror("write");
-			unlink(filename);
-			return NULL;
+	if (oflag & S_WRONLY) {
+		for (size_t i = 0; i < file_len; i++) {
+			int ret = write(fd, "\0", 1);
+			if (ret < 0) {
+				perror("write");
+				unlink(filename);
+				return NULL;
+			}
 		}
 	}
-	off_t off = lseek(fd, 0, SEEK_SET);
+
+	off = lseek(fd, 0, oflag & S_WRONLY ? SEEK_SET : SEEK_END);
 	if (off == -1) {
 		perror("lseek");
 		unlink(filename);
 		return NULL;
 	}
-	u8 *data = mmap(0, file_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+	if (!(oflag & S_WRONLY))
+		file_len = (size_t)off;
+
+	data = mmap(0, file_len, PROT_READ | PROT_WRITE, oflag & S_WRONLY ? MAP_SHARED : MAP_PRIVATE, fd, 0);
 	if (data == MAP_FAILED) {
 		perror("mmap");
 		unlink(filename);
@@ -69,12 +81,10 @@ STREAM *sopen(const char *filename, size_t file_len)
 	ctx->fd = fd;
 	ctx->data = data;
 	ctx->len = file_len;
+	ctx->oflag = oflag;
 	return ctx;
 }
 
-/*
- * Close the file
- */
 int sclose(STREAM *ctx)
 {
 	int ret;
@@ -97,24 +107,31 @@ int sclose(STREAM *ctx)
 }
 
 /*
- * Read data from the file
+ * Securely return a pointer to the given offset of a file
  */
 void *sread(STREAM *ctx, size_t offset, size_t len)
 {
-	if (ctx == NULL || offset >= ctx->len || len > ctx->len) {
+	if (!(ctx->oflag & S_RDONLY) || ctx == NULL || offset >= ctx->len || len > ctx->len) {
 		return NULL;
 	}
 	return &ctx->data[offset];
 }
 
 /*
- * Write data into the file
+ * Securely write data in a file
  */
 int swrite(STREAM *ctx, void *content, size_t offset, size_t len)
 {
-	if (ctx == NULL || content == NULL || offset >= ctx->len || len > ctx->len) {
+	if (!(ctx->oflag & S_WRONLY) || ctx == NULL || content == NULL || offset >= ctx->len || len > ctx->len) {
 		return -1;
 	}
-	ft_memcpy(ctx->data + offset, content, len);
+	ft_memmove(ctx->data + offset, content, len);
 	return 0;
+}
+
+size_t sfile_len(STREAM *ctx)
+{
+	if (ctx == NULL)
+		return -1;
+	return ctx->len;
 }
