@@ -2,7 +2,11 @@
 
 Runtime packer for ELF binaries.
 
-## Ressources
+⚠️ **Project not completed – kept here for archival purposes only.**
+
+> Hey there – I’m Jean-Baptiste, just another developer doing weird things with code. All my projects live on [jterrazz.com](https://jterrazz.com) – complete with backstories and lessons learned. Feel free to poke around – you might just find something useful!
+
+## Research notes
 
 - [ELF Header](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html)
 - [Add an ELF section in C (see last post)](https://stackoverflow.com/questions/1088128/adding-section-to-elf-file)
