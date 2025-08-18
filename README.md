@@ -31,11 +31,9 @@ $ objdump -b binary -m i386:x86-64 -M intel -D my_binary
 
 *Doesn't modify the header*
 
-```bash
 $ echo "data to insert" > mydata
 $ objcopy --add-section .mydata=mydata --set-section-flags .mydata=noload,readonly elf_exec new_exec
 $ objdump -sj .mydata new_exec
-```
 
 #### Output raw binary from .c with gcc
 
